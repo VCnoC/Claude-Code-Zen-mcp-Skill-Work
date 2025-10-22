@@ -9,7 +9,7 @@
 > **⚠️ 重要配置提示**  
 > 1. **API Keys 配置**：安装前请在环境变量中设置 `OPENAI_API_KEY` 和 `GEMINI_API_KEY`
 > 2. **Zen MCP 配置**：在 `zen-mcp/.env` 中：
->    - 设置 `OPENAI_ALLOWED_MODELS=` 指定使用的模型
+>    - 设置 `OPENAI_ALLOWED_MODELS=` 指定使用的模型（要不然会用你的 gpt5-pro模型）
 >    - 在 `DISABLED_TOOLS` 中删除 `docgen` 以启用文档生成
 > 3. **全局规则**：将 `CLAUDE.md` 复制到 `~/.claude/CLAUDE.md`（仅需一次）
 
