@@ -253,7 +253,7 @@ cp CLAUDE.md ~/.claude/CLAUDE.md
 ```bash
 # OpenAI API Key（必需，用于 codex-code-reviewer）
 OPENAI_API_KEY=sk-your-openai-api-key-here
-OPENAI_ALLOWED_MODELS=gpt-4,gpt-4-turbo,o1-mini,o1-preview
+OPENAI_ALLOWED_MODELS=
 
 # Google Gemini API Key（可选，用于 simple-gemini 和 deep-gemini）
 GEMINI_API_KEY=your-gemini-api-key-here
@@ -274,21 +274,12 @@ DISABLED_TOOLS=  # 删除 docgen 以启用文档生成
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 添加 Zen MCP Server：
-
 ```json
-{
-  "mcpServers": {
-    "zen": {
-      "command": "node",
-      "args": ["/path/to/zen-mcp-server/build/index.js"],
-      "env": {
-        "OPENAI_API_KEY": "sk-your-key-here",
-        "GEMINI_API_KEY": "your-gemini-key-here"
-      }
-    }
-  }
-}
+git clone https://github.com/BeehiveInnovations/zen-mcp-server.git
+cd zen-mcp-server
+./run-server.sh  
 ```
+具体参考 https://github.com/BeehiveInnovations/zen-mcp-server
 
 ### 可选：CLI 工具安装（增强功能）
 
