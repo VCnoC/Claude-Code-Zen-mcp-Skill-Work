@@ -92,37 +92,85 @@ flowchart LR
 
 **必需组件**：
 - [Claude Desktop](https://claude.ai/download) - AI 编程助手
-- [Zen MCP Server](https://github.com/BeehiveInnovations/zen-mcp-server) - MCP 服务器
+- [Git](https://git-scm.com/downloads) - 版本控制工具
+- [Node.js](https://nodejs.org/) >= 14.0.0 - 运行环境
 
-**可选 CLI 工具**（增强功能）：
-- **Gemini CLI** - 用于文档生成和深度分析
-- **Codex CLI** - 用于代码审查和质量检查
+**自动安装项**（脚本会自动下载）：
+- [Zen MCP Server](https://github.com/BeehiveInnovations/zen-mcp-server) - MCP 服务器（自动下载）
+- 5 个技能包（自动安装）
+- 全局配置文件（自动配置）
 
-### 安装步骤
+### 一键安装 ⭐ 推荐
 
-#### 1. 安装 Zen MCP Server
+#### 方式 1: NPM 安装（跨平台）
 
 ```bash
-git clone https://github.com/BeehiveInnovations/zen-mcp-server.git
-cd zen-mcp-server
-./run-server.sh
+# 方法 A: 使用 npx（无需下载仓库）
+npx claude-code-zen-installer
+
+# 方法 B: 克隆仓库后安装
+git clone https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git
+cd Claude-Code-Zen-mcp-Skill-Work
+npm install
+node install.js
 ```
 
-#### 2. 下载本项目技能包
+#### 方式 2: Shell 脚本（Linux/Mac）
 
 ```bash
 git clone https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git
 cd Claude-Code-Zen-mcp-Skill-Work
+chmod +x install.sh
+./install.sh
 ```
 
-**手动安装**
+#### 方式 3: PowerShell 脚本（Windows）
 
-1. 解压 `skills/` 目录下的所有 `.zip` 文件
-2. 将解压后的 `.skill` 文件夹复制到 Claude 配置目录：
-   - **Windows**: `%USERPROFILE%\.claude\skills\`
-   - **macOS/Linux**: `~/.claude/skills/`
+```powershell
+git clone https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git
+cd Claude-Code-Zen-mcp-Skill-Work
+.\install.ps1
+```
 
-#### 4. 验证安装
+**安装脚本会自动完成**：
+1. ✅ 下载并安装 Zen MCP Server
+2. ✅ 解压并安装 5 个技能包到 `~/.claude/skills/`
+3. ✅ 复制 CLAUDE.md 到 `~/.claude/CLAUDE.md`
+4. ✅ 配置 Claude Desktop 的 MCP 连接（可选）
+5. ✅ 创建 `.env` 配置模板
+
+### 配置 API Keys
+
+安装完成后，需要配置 API Keys：
+
+**1. Zen MCP Server 配置**：
+编辑 `~/zen-mcp-server/.env`：
+```bash
+OPENAI_API_KEY=sk-your-openai-api-key-here
+GEMINI_API_KEY=your-gemini-api-key-here
+```
+
+**2. Claude Desktop 配置**：
+编辑配置文件中的 API Keys：
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+
+> 📌 **获取 API Key**：
+> - OpenAI: https://platform.openai.com/api-keys
+> - Google Gemini: https://makersuite.google.com/app/apikey
+
+### 启动服务
+
+```bash
+# 启动 Zen MCP Server
+cd ~/zen-mcp-server
+npm start
+```
+
+然后重启 Claude Desktop。
+
+### 验证安装
 
 启动 Claude Desktop，在对话中输入：
 ```
@@ -131,7 +179,50 @@ cd Claude-Code-Zen-mcp-Skill-Work
 
 如果看到 5 个技能包（main-router、plan-down、codex-code-reviewer、simple-gemini、deep-gemini），说明安装成功。
 
-### 使用方式
+---
+
+## 🛠️ 手动安装（可选）
+
+如果自动安装失败，可以手动安装：
+
+### 1. 安装 Zen MCP Server
+
+```bash
+git clone https://github.com/BeehiveInnovations/zen-mcp-server.git ~/zen-mcp-server
+cd ~/zen-mcp-server
+npm install
+```
+
+### 2. 安装技能包
+
+```bash
+# 下载本项目
+git clone https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git
+cd Claude-Code-Zen-mcp-Skill-Work
+
+# 解压并复制技能包
+unzip skills/main-router.zip -d ~/.claude/skills/
+unzip skills/plan-down.zip -d ~/.claude/skills/
+unzip skills/codex-code-reviewer.zip -d ~/.claude/skills/
+unzip skills/simple-gemini.zip -d ~/.claude/skills/
+unzip skills/deep-gemini.zip -d ~/.claude/skills/
+
+# Windows 用户使用 PowerShell:
+# Expand-Archive -Path skills\*.zip -DestinationPath $env:USERPROFILE\.claude\skills\
+```
+
+### 3. 复制全局配置
+
+```bash
+cp CLAUDE.md ~/.claude/CLAUDE.md
+
+# Windows 用户:
+# Copy-Item CLAUDE.md $env:USERPROFILE\.claude\CLAUDE.md
+```
+
+---
+
+## 📖 使用方式
 
 **交互模式**：
 ```
@@ -199,47 +290,29 @@ DISABLED_TOOLS=  # 删除 docgen 以启用文档生成
 }
 ```
 
-### 可选 CLI 工具安装
+### 可选：CLI 工具安装（增强功能）
 
-> ⚠️ **前置要求**：安装前请确保已在环境变量中配置相关 API Keys（`OPENAI_API_KEY`、`GEMINI_API_KEY`）
+> 📝 **注意**：Zen MCP Server 已内置对 Codex 和 Gemini 的 API 调用支持，无需额外安装 CLI 工具。
+> 
+> 以下 CLI 工具仅在需要本地命令行调试时安装：
 
-#### Gemini CLI
-
-用于文档生成和深度技术分析。
+#### Gemini CLI（可选）
 
 ```bash
 npm install -g @google/gemini-cli
+gemini --version
 ```
 
-**参考文档**：[google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)
-
-#### Codex CLI
-
-用于代码质量审查和 5 维度检查。
+#### Codex CLI（可选）
 
 ```bash
 npm install -g @openai/codex
-```
-
-**参考文档**：[openai/codex](https://github.com/openai/codex)
-
-**验证安装**：
-
-```bash
-# 检查 Gemini CLI
-gemini --version
-
-# 检查 Codex CLI
 codex --version
 ```
-### 配置文件优先级
 
-系统按以下优先级读取配置：
-
-1. **环境变量**（最高优先级）
-2. **`.env` 文件**（zen-mcp-server 目录）
-3. **MCP 配置**（claude_desktop_config.json）
-4. **CLI 工具配置**（~/.openai/config, gemini config）
+**参考**：
+- [google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)
+- [openai/codex](https://github.com/openai/codex)
 
 ---
 
@@ -247,8 +320,9 @@ codex --version
 
 | 文档 | 说明 |
 |------|------|
+| [QUICKSTART.md](QUICKSTART.md) | ⭐ 3 分钟快速开始指南 |
 | [AGENTS.md](AGENTS.md) | 全局规则和 P1-P4 阶段定义 |
-| [PROJECTWIKI.md](PROJECTWIKI.md) | 项目知识库和详细文档 |
+| [CLAUDE.md](CLAUDE.md) | 全局工作流规则（需复制到 `~/.claude/`） |
 | [CHANGELOG.md](CHANGELOG.md) | 变更日志 |
 
 ---

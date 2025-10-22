@@ -1,0 +1,37 @@
+# 开发文件
+.git/
+.gitignore
+.gitattributes
+
+# 临时文件
+temp_extract/
+*.log
+*.tmp
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 测试文件
+test/
+*.test.js
+
+# 文档草稿
+docs/draft/
+
+# 仅保留必要文件：
+# - package.json
+# - install.js
+# - install.sh
+# - install.ps1
+# - skills/*.zip
+# - CLAUDE.md
+# - AGENTS.md
+# - README.md
+

@@ -1,0 +1,51 @@
+{
+  "name": "claude-code-zen-installer",
+  "version": "1.0.0",
+  "description": "One-click installer for Claude Code Zen MCP Skills - Automatically installs Zen MCP Server, skill packages, and global configurations",
+  "main": "install.js",
+  "bin": {
+    "claude-code-zen-installer": "./install.js",
+    "ccz-install": "./install.js"
+  },
+  "scripts": {
+    "test": "node install.js --dry-run"
+  },
+  "keywords": [
+    "claude",
+    "mcp",
+    "ai",
+    "skills",
+    "code-review",
+    "documentation",
+    "planning",
+    "zen-mcp",
+    "installer",
+    "automation",
+    "cli"
+  ],
+  "author": "VCnoC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git"
+  },
+  "homepage": "https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work#readme",
+  "bugs": {
+    "url": "https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work/issues"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "install.js",
+    "install.sh",
+    "install.ps1",
+    "skills/",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "README.md",
+    "QUICKSTART.md",
+    "CHANGELOG.md"
+  ]
+}
+

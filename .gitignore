@@ -1,0 +1,21 @@
+# 临时文件和构建产物
+temp_extract/
+*.log
+*.tmp
+*.tgz
+node_modules/
+package-lock.json
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 仅排除开发过程中的临时文件
+# 所有安装脚本、文档、配置文件都会提交到 GitHub
+
