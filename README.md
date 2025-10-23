@@ -90,54 +90,9 @@ flowchart LR
 
 ### 环境要求
 
-**必需组件**：
-- [Claude Desktop](https://claude.ai/download) - AI 编程助手
-- [Git](https://git-scm.com/downloads) - 版本控制工具
-- [Node.js](https://nodejs.org/) >= 14.0.0 - 运行环境
+请手动 clone 该项目，得到的 CLAUDE.md/AGENTS.md 放入 .claude 中（会覆盖原有 CLAUDE.md）
+skills文件夹内的五个压缩包请解压，然后把解压后文件放入 .claude 文件夹内的 skills 文件夹。
 
-**自动安装项**（脚本会自动下载）：
-- [Zen MCP Server](https://github.com/BeehiveInnovations/zen-mcp-server) - MCP 服务器（自动下载）
-- 5 个技能包（自动安装）
-- 全局配置文件（自动配置）
-
-### 一键安装 ⭐ 推荐
-
-#### 方式 1: NPM 安装（跨平台）
-
-```bash
-# 方法 A: 使用 npx（无需下载仓库）
-npx claude-code-zen-installer
-
-# 方法 B: 克隆仓库后安装
-git clone https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git
-cd Claude-Code-Zen-mcp-Skill-Work
-npm install
-node install.js
-```
-
-#### 方式 2: Shell 脚本（Linux/Mac）
-
-```bash
-git clone https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git
-cd Claude-Code-Zen-mcp-Skill-Work
-chmod +x install.sh
-./install.sh
-```
-
-#### 方式 3: PowerShell 脚本（Windows）
-
-```powershell
-git clone https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git
-cd Claude-Code-Zen-mcp-Skill-Work
-.\install.ps1
-```
-
-**安装脚本会自动完成**：
-1. ✅ 下载并安装 Zen MCP Server
-2. ✅ 解压并安装 5 个技能包到 `~/.claude/skills/`
-3. ✅ 复制 CLAUDE.md 到 `~/.claude/CLAUDE.md`
-4. ✅ 配置 Claude Desktop 的 MCP 连接（可选）
-5. ✅ 创建 `.env` 配置模板
 
 ### 配置 API Keys
 
