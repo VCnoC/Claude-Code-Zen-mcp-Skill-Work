@@ -90,9 +90,44 @@ flowchart LR
 
 ### 环境要求
 
-请手动 clone 该项目，得到的 CLAUDE.md/AGENTS.md 放入 .claude 中（会覆盖原有 CLAUDE.md）
-skills文件夹内的五个压缩包请解压，然后把解压后文件放入 .claude 文件夹内的 skills 文件夹。
+## 🛠️ 手动安装（推荐）
 
+如果自动安装失败，可以手动安装：
+
+### 1. 安装 Zen MCP Server
+
+```bash
+git clone https://github.com/BeehiveInnovations/zen-mcp-server.git ~/zen-mcp-server
+cd ~/zen-mcp-server
+npm install
+```
+
+### 2. 安装技能包
+
+```bash
+# 下载本项目
+git clone https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git
+cd Claude-Code-Zen-mcp-Skill-Work
+
+# 解压并复制技能包
+unzip skills/main-router.zip -d ~/.claude/skills/
+unzip skills/plan-down.zip -d ~/.claude/skills/
+unzip skills/codex-code-reviewer.zip -d ~/.claude/skills/
+unzip skills/simple-gemini.zip -d ~/.claude/skills/
+unzip skills/deep-gemini.zip -d ~/.claude/skills/
+
+# Windows 用户使用 PowerShell:
+# Expand-Archive -Path skills\*.zip -DestinationPath $env:USERPROFILE\.claude\skills\
+```
+
+### 3. 复制全局配置
+
+```bash
+cp CLAUDE.md ~/.claude/CLAUDE.md
+
+# Windows 用户:
+# Copy-Item CLAUDE.md $env:USERPROFILE\.claude\CLAUDE.md
+```
 
 ### 配置 API Keys
 
@@ -136,44 +171,7 @@ npm start
 
 ---
 
-## 🛠️ 手动安装（可选）
 
-如果自动安装失败，可以手动安装：
-
-### 1. 安装 Zen MCP Server
-
-```bash
-git clone https://github.com/BeehiveInnovations/zen-mcp-server.git ~/zen-mcp-server
-cd ~/zen-mcp-server
-npm install
-```
-
-### 2. 安装技能包
-
-```bash
-# 下载本项目
-git clone https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git
-cd Claude-Code-Zen-mcp-Skill-Work
-
-# 解压并复制技能包
-unzip skills/main-router.zip -d ~/.claude/skills/
-unzip skills/plan-down.zip -d ~/.claude/skills/
-unzip skills/codex-code-reviewer.zip -d ~/.claude/skills/
-unzip skills/simple-gemini.zip -d ~/.claude/skills/
-unzip skills/deep-gemini.zip -d ~/.claude/skills/
-
-# Windows 用户使用 PowerShell:
-# Expand-Archive -Path skills\*.zip -DestinationPath $env:USERPROFILE\.claude\skills\
-```
-
-### 3. 复制全局配置
-
-```bash
-cp CLAUDE.md ~/.claude/CLAUDE.md
-
-# Windows 用户:
-# Copy-Item CLAUDE.md $env:USERPROFILE\.claude\CLAUDE.md
-```
 
 ---
 
