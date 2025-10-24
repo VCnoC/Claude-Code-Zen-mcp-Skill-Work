@@ -43,15 +43,16 @@
 git clone https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git
 cd Claude-Code-Zen-mcp-Skill-Work
 
-# 2. 复制 Zen MCP Server 到用户目录
+# 2. 复制并安装 Zen MCP Server（Python 项目）
 # Linux/Mac
 cp -r zen-mcp-server ~/zen-mcp-server
 cd ~/zen-mcp-server
+pip3 install -r requirements.txt
 
-# Windows PowerShell
+# Windows PowerShell  
 # Copy-Item -Path "zen-mcp-server" -Destination "$env:USERPROFILE\zen-mcp-server" -Recurse
 # cd $env:USERPROFILE\zen-mcp-server
-# npm install
+# pip install -r requirements.txt
 
 # 3. 返回项目目录，复制技能包到 Claude 配置目录
 # Linux/Mac
