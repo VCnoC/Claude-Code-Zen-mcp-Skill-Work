@@ -1,0 +1,62 @@
+name: 🐞 Bug Report
+description: Create a report to help us improve
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to file a bug report! Please provide as much detail as possible to help us reproduce and fix the issue.
+
+  - type: input
+    id: version
+    attributes:
+      label: Project Version
+      description: "Which version are you using? (To see version: ./run-server.sh -v)"
+      placeholder: "e.g., 5.1.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: "When I run the `codereview` nothing happens"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Log Output
+      description: "Please copy and paste any relevant log output. Logs are stored under the `logs` folder in the zen folder. You an also use `./run-server.sh -f` to see logs"
+      render: shell
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Operating System
+      description: What operating system are you running the Docker client on?
+      options:
+        - macOS
+        - Windows
+        - Linux
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: no-duplicate-issues
+    attributes:
+      label: Sanity Checks
+      description: "Before submitting, please confirm the following:"
+      options:
+        - label: I have searched the existing issues and this is not a duplicate.
+          required: true
+        - label: I am using `GEMINI_API_KEY`
+          required: true
+        - label: I am using `OPENAI_API_KEY`
+          required: true
+        - label: I am using `OPENROUTER_API_KEY`
+          required: true
+        - label: I am using `CUSTOM_API_URL`
+          required: true

@@ -1,0 +1,41 @@
+{
+  "_README": {
+    "description": "Model metadata for local/self-hosted OpenAI-compatible endpoints (Custom provider).",
+    "documentation": "https://github.com/BeehiveInnovations/zen-mcp-server/blob/main/docs/custom_models.md",
+    "usage": "Each entry will be advertised by the Custom provider. Aliases are case-insensitive.",
+    "field_notes": "Matches providers/shared/model_capabilities.py.",
+    "field_descriptions": {
+      "model_name": "The model identifier e.g., 'llama3.2'",
+      "aliases": "Array of short names users can type instead of the full model name",
+      "context_window": "Total number of tokens the model can process (input + output combined)",
+      "max_output_tokens": "Maximum number of tokens the model can generate in a single response",
+      "supports_extended_thinking": "Whether the model supports extended reasoning tokens",
+      "supports_json_mode": "Whether the model can guarantee valid JSON output",
+      "supports_function_calling": "Whether the model supports function/tool calling",
+      "supports_images": "Whether the model can process images/visual input",
+      "max_image_size_mb": "Maximum total size in MB for all images combined (capped at 40MB max for custom models)",
+      "supports_temperature": "Whether the model accepts temperature parameter in API calls (set to false for O3/O4 reasoning models)",
+      "temperature_constraint": "Type of temperature constraint: 'fixed' (fixed value), 'range' (continuous range), 'discrete' (specific values), or omit for default range",
+      "description": "Human-readable description of the model",
+      "intelligence_score": "1-20 human rating used as the primary signal for auto-mode model ordering"
+    }
+  },
+  "models": [
+    {
+      "model_name": "llama3.2",
+      "aliases": [
+        "local-llama",
+        "ollama-llama"
+      ],
+      "context_window": 128000,
+      "max_output_tokens": 64000,
+      "supports_extended_thinking": false,
+      "supports_json_mode": false,
+      "supports_function_calling": false,
+      "supports_images": false,
+      "max_image_size_mb": 0.0,
+      "description": "Local Llama 3.2 model via custom endpoint (Ollama/vLLM) - 128K context window (text-only)",
+      "intelligence_score": 6
+    }
+  ]
+}
