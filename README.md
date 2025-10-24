@@ -52,10 +52,16 @@ pip3 install -r requirements.txt
 
 # 3. 复制技能包到 Claude 配置目录
 cd -  # 返回项目目录
+
+# ⚠️ 重要：先创建目标目录
+mkdir -p ~/.claude/skills
+
 # 检查是否已有技能包，建议手动合并避免覆盖
 if [ -d ~/.claude/skills/main-router ]; then
     echo "⚠️  检测到已有技能包，请手动检查是否需要备份"
 fi
+
+# 复制所有技能包到 Claude 配置目录
 cp -r skills/* ~/.claude/skills/
 
 # 4. 备份并复制全局配置
@@ -83,10 +89,16 @@ pip install -r requirements.txt
 
 # 4. 返回项目目录，复制技能包
 cd $ProjectDir
+
+# ⚠️ 重要：先创建目标目录（避免 PowerShell 复制行为异常）
+New-Item -ItemType Directory -Path "$env:USERPROFILE\.claude\skills" -Force | Out-Null
+
 # 检查 skills 目录，如果已有技能包建议手动合并
 if (Test-Path "$env:USERPROFILE\.claude\skills\main-router") {
     Write-Host "⚠️  检测到已有技能包，请手动检查是否需要备份" -ForegroundColor Yellow
 }
+
+# 复制所有技能包到 Claude 配置目录
 Copy-Item -Path "skills\*" -Destination "$env:USERPROFILE\.claude\skills\" -Recurse -Force
 
 # 5. 备份并复制全局配置
