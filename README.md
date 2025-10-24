@@ -38,35 +38,63 @@
 
 #### 方式 1: 手动安装（推荐，最稳定）
 
+##### Linux / macOS 用户
+
 ```bash
 # 1. 下载本项目（已包含 Zen MCP Server）
 git clone https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git
 cd Claude-Code-Zen-mcp-Skill-Work
 
 # 2. 复制并安装 Zen MCP Server（Python 项目）
-# Linux/Mac
 cp -r zen-mcp-server ~/zen-mcp-server
 cd ~/zen-mcp-server
 pip3 install -r requirements.txt
 
-# Windows PowerShell  
-# Copy-Item -Path "zen-mcp-server" -Destination "$env:USERPROFILE\zen-mcp-server" -Recurse
-# cd $env:USERPROFILE\zen-mcp-server
-# pip install -r requirements.txt
-
-# 3. 返回项目目录，复制技能包到 Claude 配置目录
-# Linux/Mac
-cd -  # 返回上一个目录（项目目录）
+# 3. 复制技能包到 Claude 配置目录
+cd -  # 返回项目目录
+# 检查是否已有技能包，建议手动合并避免覆盖
+if [ -d ~/.claude/skills/main-router ]; then
+    echo "⚠️  检测到已有技能包，请手动检查是否需要备份"
+fi
 cp -r skills/* ~/.claude/skills/
 
-# Windows PowerShell
-# Copy-Item -Path "skills\*" -Destination "$env:USERPROFILE\.claude\skills\" -Recurse
-
-# 4. 复制全局配置
+# 4. 备份并复制全局配置
+if [ -f ~/.claude/CLAUDE.md ]; then
+    cp ~/.claude/CLAUDE.md ~/.claude/CLAUDE.backup.$(date +%Y%m%d%H%M%S).md
+    echo "✅ 已备份现有 CLAUDE.md"
+fi
 cp CLAUDE.md ~/.claude/CLAUDE.md
+```
 
-# Windows PowerShell
-# Copy-Item CLAUDE.md $env:USERPROFILE\.claude\CLAUDE.md
+##### Windows 用户
+
+```powershell
+# 1. 下载本项目（已包含 Zen MCP Server）
+git clone https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git
+cd Claude-Code-Zen-mcp-Skill-Work
+
+# 2. 保存项目路径（方便后续返回）
+$ProjectDir = Get-Location
+
+# 3. 复制并安装 Zen MCP Server（Python 项目）
+Copy-Item -Path "zen-mcp-server" -Destination "$env:USERPROFILE\zen-mcp-server" -Recurse
+cd $env:USERPROFILE\zen-mcp-server
+pip install -r requirements.txt
+
+# 4. 返回项目目录，复制技能包
+cd $ProjectDir
+# 检查 skills 目录，如果已有技能包建议手动合并
+if (Test-Path "$env:USERPROFILE\.claude\skills\main-router") {
+    Write-Host "⚠️  检测到已有技能包，请手动检查是否需要备份" -ForegroundColor Yellow
+}
+Copy-Item -Path "skills\*" -Destination "$env:USERPROFILE\.claude\skills\" -Recurse -Force
+
+# 5. 备份并复制全局配置
+if (Test-Path "$env:USERPROFILE\.claude\CLAUDE.md") {
+    Copy-Item "$env:USERPROFILE\.claude\CLAUDE.md" "$env:USERPROFILE\.claude\CLAUDE.backup.$(Get-Date -Format 'yyyyMMddHHmmss').md"
+    Write-Host "✅ 已备份现有 CLAUDE.md" -ForegroundColor Green
+}
+Copy-Item CLAUDE.md $env:USERPROFILE\.claude\CLAUDE.md -Force
 ```
 
 #### 方式 2: 自动安装脚本（实验性）
