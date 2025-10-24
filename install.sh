@@ -26,6 +26,7 @@ CLAUDE_CONFIG_DIR="$HOME/.claude"
 SKILLS_DIR="$CLAUDE_CONFIG_DIR/skills"
 ZEN_MCP_DIR="$HOME/zen-mcp-server"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ZEN_MCP_SOURCE_DIR="$SCRIPT_DIR/zen-mcp-server"
 
 # Claude Desktop 配置路径
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -69,20 +70,27 @@ ensure_dir() {
   fi
 }
 
-# 安装 Zen MCP Server
+# 安装 Zen MCP Server（从本地复制）
 install_zen_mcp() {
   log_step "安装 Zen MCP Server..."
 
   if [ -d "$ZEN_MCP_DIR" ]; then
-    log_warning "Zen MCP Server 目录已存在，跳过下载"
+    log_warning "Zen MCP Server 目录已存在，跳过安装"
     log_info "路径: $ZEN_MCP_DIR"
     log_info "如需重新安装，请先删除该目录"
     return 0
   fi
 
-  log_info "正在克隆 Zen MCP Server 仓库..."
-  git clone https://github.com/BeehiveInnovations/zen-mcp-server.git "$ZEN_MCP_DIR"
-  log_success "Zen MCP Server 下载完成"
+  # 检查本地是否有 zen-mcp-server
+  if [ ! -d "$ZEN_MCP_SOURCE_DIR" ]; then
+    log_error "未找到 zen-mcp-server 目录"
+    log_info "请确保项目完整克隆"
+    return 1
+  fi
+
+  log_info "正在复制 Zen MCP Server..."
+  cp -r "$ZEN_MCP_SOURCE_DIR" "$ZEN_MCP_DIR"
+  log_success "Zen MCP Server 复制完成"
 
   # 安装依赖
   log_info "正在安装 Zen MCP Server 依赖..."
@@ -113,7 +121,7 @@ EOF
   cd "$SCRIPT_DIR"
 }
 
-# 安装技能包
+# 安装技能包（直接复制文件夹，无需解压）
 install_skills() {
   log_step "安装技能包..."
 
@@ -130,11 +138,11 @@ install_skills() {
   SUCCESS_COUNT=0
 
   for SKILL in "${SKILLS[@]}"; do
-    ZIP_FILE="$SCRIPT_DIR/skills/$SKILL.zip"
+    SOURCE_DIR="$SCRIPT_DIR/skills/$SKILL"
     TARGET_DIR="$SKILLS_DIR/$SKILL"
 
-    if [ ! -f "$ZIP_FILE" ]; then
-      log_warning "技能包不存在: $SKILL.zip"
+    if [ ! -d "$SOURCE_DIR" ]; then
+      log_warning "技能包文件夹不存在: $SKILL"
       continue
     fi
 
@@ -145,7 +153,7 @@ install_skills() {
     fi
 
     log_info "正在安装: $SKILL..."
-    unzip -q "$ZIP_FILE" -d "$SKILLS_DIR"
+    cp -r "$SOURCE_DIR" "$TARGET_DIR"
     log_success "$SKILL 安装完成"
     ((SUCCESS_COUNT++))
   done

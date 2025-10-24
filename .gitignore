@@ -3,8 +3,29 @@ temp_extract/
 *.log
 *.tmp
 *.tgz
+
+# zen-mcp-server 的 node_modules（不上传依赖）
+zen-mcp-server/node_modules/
+zen-mcp-server/build/
+zen-mcp-server/.env
+
+# 项目根目录的 node_modules
 node_modules/
 package-lock.json
+
+# NPM 专用文件（只在 NPM 包中，不上传 GitHub）
+package.json
+QUICKSTART.md
+CHANGELOG.md
+
+# 安装脚本（只在 NPM 包中）
+install.js
+install.sh
+install.ps1
+
+# NPM 配置文件
+.npmignore
+.gitattributes
 
 # IDE 文件
 .vscode/
@@ -15,7 +36,4 @@ package-lock.json
 # 操作系统文件
 .DS_Store
 Thumbs.db
-
-# 仅排除开发过程中的临时文件
-# 所有安装脚本、文档、配置文件都会提交到 GitHub
 

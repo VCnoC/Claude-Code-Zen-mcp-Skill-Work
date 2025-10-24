@@ -39,6 +39,7 @@ const homeDir = os.homedir();
 const claudeConfigDir = path.join(homeDir, '.claude');
 const skillsDir = path.join(claudeConfigDir, 'skills');
 const zenMcpDir = path.join(homeDir, 'zen-mcp-server');
+const zenMcpSourceDir = path.join(__dirname, 'zen-mcp-server');
 
 // Claude Desktop 配置路径
 const claudeDesktopConfigPath = isWindows
@@ -108,26 +109,30 @@ function ensureDir(dirPath) {
 }
 
 /**
- * 下载并安装 Zen MCP Server
+ * 安装 Zen MCP Server（从本地复制，无需下载）
  */
 function installZenMcp() {
   log.step('安装 Zen MCP Server...');
 
   if (fs.existsSync(zenMcpDir)) {
-    log.warning('Zen MCP Server 目录已存在，跳过下载');
+    log.warning('Zen MCP Server 目录已存在，跳过安装');
     log.info(`路径: ${zenMcpDir}`);
     log.info('如需重新安装，请先删除该目录');
     return true;
   }
 
-  log.info('正在克隆 Zen MCP Server 仓库...');
-  const result = runCommand(
-    'git clone https://github.com/BeehiveInnovations/zen-mcp-server.git zen-mcp-server',
-    homeDir
-  );
+  // 检查本地是否有 zen-mcp-server
+  if (!fs.existsSync(zenMcpSourceDir)) {
+    log.error('未找到 zen-mcp-server 目录');
+    log.info('请确保项目完整克隆');
+    return false;
+  }
 
-  if (result.success) {
-    log.success('Zen MCP Server 下载完成');
+  log.info('正在复制 Zen MCP Server...');
+  try {
+    // 递归复制整个目录
+    copyRecursiveSync(zenMcpSourceDir, zenMcpDir);
+    log.success('Zen MCP Server 复制完成');
 
     // 安装依赖
     log.info('正在安装 Zen MCP Server 依赖...');
@@ -169,60 +174,33 @@ DISABLED_TOOLS=
 }
 
 /**
- * 检查 unzip 命令是否可用（Linux/Mac）
- */
-function checkUnzip() {
-  if (isWindows) return true; // Windows 使用 PowerShell，不需要 unzip
-  
-  const result = runCommand('which unzip', process.cwd(), { silent: true });
-  if (!result.success) {
-    log.error('未检测到 unzip 命令');
-    log.info('请安装 unzip:');
-    if (isMac) {
-      log.info('  brew install unzip');
-    } else {
-      log.info('  sudo apt-get install unzip  (Ubuntu/Debian)');
-      log.info('  sudo yum install unzip      (CentOS/RHEL)');
-    }
-    return false;
-  }
-  return true;
-}
-
-/**
- * 解压并安装技能包
+ * 复制技能包文件夹（直接复制，无需解压）
  */
 function installSkills() {
   log.step('安装技能包...');
 
-  // 检查解压工具
-  if (!checkUnzip()) {
-    log.error('缺少解压工具，无法继续');
-    return false;
-  }
-
   ensureDir(skillsDir);
 
   const skillsSourceDir = path.join(__dirname, 'skills');
-  const skillZips = [
-    'main-router.zip',
-    'plan-down.zip',
-    'codex-code-reviewer.zip',
-    'simple-gemini.zip',
-    'deep-gemini.zip',
+  const skillFolders = [
+    'main-router',
+    'plan-down',
+    'codex-code-reviewer',
+    'simple-gemini',
+    'deep-gemini',
   ];
 
   let successCount = 0;
 
-  for (const zipFile of skillZips) {
-    const zipPath = path.join(skillsSourceDir, zipFile);
-    if (!fs.existsSync(zipPath)) {
-      log.warning(`技能包不存在: ${zipFile}`);
+  for (const skillName of skillFolders) {
+    const sourceDir = path.join(skillsSourceDir, skillName);
+    const targetDir = path.join(skillsDir, skillName);
+
+    // 检查源文件夹是否存在
+    if (!fs.existsSync(sourceDir)) {
+      log.warning(`技能包文件夹不存在: ${skillName}`);
       continue;
     }
-
-    const skillName = zipFile.replace('.zip', '');
-    const targetDir = path.join(skillsDir, skillName);
 
     // 检查是否已安装
     if (fs.existsSync(targetDir)) {
@@ -231,29 +209,40 @@ function installSkills() {
       continue;
     }
 
-    // 解压（跨平台）
+    // 复制文件夹（跨平台）
     log.info(`正在安装: ${skillName}...`);
-    let unzipResult;
-
-    if (isWindows) {
-      // Windows: 使用 PowerShell
-      const command = `Expand-Archive -Path '${zipPath}' -DestinationPath '${skillsDir}' -Force`;
-      unzipResult = runCommand(command, process.cwd(), { silent: true });
-    } else {
-      // Linux/Mac: 使用 unzip
-      unzipResult = runCommand(`unzip -q '${zipPath}' -d '${skillsDir}'`, process.cwd(), { silent: true });
-    }
-
-    if (unzipResult.success) {
+    try {
+      // 使用递归复制
+      copyRecursiveSync(sourceDir, targetDir);
       log.success(`${skillName} 安装完成`);
       successCount++;
-    } else {
-      log.error(`${skillName} 安装失败`);
+    } catch (error) {
+      log.error(`${skillName} 安装失败: ${error.message}`);
     }
   }
 
-  log.success(`技能包安装完成 (${successCount}/${skillZips.length})`);
+  log.success(`技能包安装完成 (${successCount}/${skillFolders.length})`);
   return successCount > 0;
+}
+
+/**
+ * 递归复制文件夹
+ */
+function copyRecursiveSync(src, dest) {
+  const exists = fs.existsSync(src);
+  const stats = exists && fs.statSync(src);
+  const isDirectory = exists && stats.isDirectory();
+
+  if (isDirectory) {
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(dest, { recursive: true });
+    }
+    fs.readdirSync(src).forEach((childItemName) => {
+      copyRecursiveSync(path.join(src, childItemName), path.join(dest, childItemName));
+    });
+  } else {
+    fs.copyFileSync(src, dest);
+  }
 }
 
 /**

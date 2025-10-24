@@ -17,6 +17,7 @@ $ClaudeConfigDir = Join-Path $HomeDir ".claude"
 $SkillsDir = Join-Path $ClaudeConfigDir "skills"
 $ZenMcpDir = Join-Path $HomeDir "zen-mcp-server"
 $ScriptDir = $PSScriptRoot
+$ZenMcpSourceDir = Join-Path $ScriptDir "zen-mcp-server"
 
 # Claude Desktop 配置路径
 $ClaudeDesktopConfig = Join-Path $env:APPDATA "Claude\claude_desktop_config.json"
@@ -58,22 +59,28 @@ function Ensure-Dir {
     }
 }
 
-# 安装 Zen MCP Server
+# 安装 Zen MCP Server（从本地复制）
 function Install-ZenMcp {
     Write-Step "安装 Zen MCP Server..."
 
     if (Test-Path $ZenMcpDir) {
-        Write-Warning "Zen MCP Server 目录已存在，跳过下载"
+        Write-Warning "Zen MCP Server 目录已存在，跳过安装"
         Write-Info "路径: $ZenMcpDir"
         Write-Info "如需重新安装，请先删除该目录"
         return $true
     }
 
-    Write-Info "正在克隆 Zen MCP Server 仓库..."
+    # 检查本地是否有 zen-mcp-server
+    if (-not (Test-Path $ZenMcpSourceDir)) {
+        Write-Error "未找到 zen-mcp-server 目录"
+        Write-Info "请确保项目完整克隆"
+        return $false
+    }
+
+    Write-Info "正在复制 Zen MCP Server..."
     try {
-        Set-Location $HomeDir
-        git clone https://github.com/BeehiveInnovations/zen-mcp-server.git
-        Write-Success "Zen MCP Server 下载完成"
+        Copy-Item -Path $ZenMcpSourceDir -Destination $ZenMcpDir -Recurse -Force
+        Write-Success "Zen MCP Server 复制完成"
 
         # 安装依赖
         Write-Info "正在安装 Zen MCP Server 依赖..."
@@ -112,7 +119,7 @@ DISABLED_TOOLS=
     }
 }
 
-# 安装技能包
+# 安装技能包（直接复制文件夹，无需解压）
 function Install-Skills {
     Write-Step "安装技能包..."
 
@@ -129,11 +136,11 @@ function Install-Skills {
     $successCount = 0
 
     foreach ($skill in $skills) {
-        $zipFile = Join-Path $ScriptDir "skills\$skill.zip"
+        $sourceDir = Join-Path $ScriptDir "skills\$skill"
         $targetDir = Join-Path $SkillsDir $skill
 
-        if (-not (Test-Path $zipFile)) {
-            Write-Warning "技能包不存在: $skill.zip"
+        if (-not (Test-Path $sourceDir)) {
+            Write-Warning "技能包文件夹不存在: $skill"
             continue
         }
 
@@ -145,7 +152,7 @@ function Install-Skills {
 
         Write-Info "正在安装: $skill..."
         try {
-            Expand-Archive -Path $zipFile -DestinationPath $SkillsDir -Force
+            Copy-Item -Path $sourceDir -Destination $targetDir -Recurse -Force
             Write-Success "$skill 安装完成"
             $successCount++
         } catch {

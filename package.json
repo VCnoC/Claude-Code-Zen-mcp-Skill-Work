@@ -24,7 +24,7 @@
     "cli"
   ],
   "author": "VCnoC",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/VCnoC/Claude-Code-Zen-mcp-Skill-Work.git"
@@ -40,12 +40,14 @@
     "install.js",
     "install.sh",
     "install.ps1",
+    "zen-mcp-server/",
     "skills/",
     "CLAUDE.md",
     "AGENTS.md",
     "README.md",
     "QUICKSTART.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "LICENSE"
   ]
 }
 
