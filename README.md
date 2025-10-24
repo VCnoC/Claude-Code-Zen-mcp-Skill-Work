@@ -140,8 +140,8 @@ DISABLED_TOOLS=
 {
   "mcpServers": {
     "zen": {
-      "command": "node",
-      "args": ["/path/to/zen-mcp-server/build/index.js"],
+      "command": "python3",
+      "args": ["/path/to/zen-mcp-server/server.py"],
       "env": {
         "OPENAI_API_KEY": "sk-your-key-here",
         "GEMINI_API_KEY": "your-gemini-key-here"
@@ -151,16 +151,28 @@ DISABLED_TOOLS=
 }
 ```
 
+> 💡 **注意**：
+> - Linux/Mac 使用 `python3`
+> - Windows 使用 `python` 或 `python3`（取决于安装方式）
+> - 路径示例：
+>   - Linux/Mac: `"/home/username/zen-mcp-server/server.py"`
+>   - Windows: `"C:/Users/Username/zen-mcp-server/server.py"`
+
 > 💡 **详细配置说明**：请参考 [Zen MCP Server 文档](https://github.com/BeehiveInnovations/zen-mcp-server)
 
 ### 3. 启动 Zen MCP Server
 
 ```bash
 cd ~/zen-mcp-server
-npm start
 
-# 或使用启动脚本
-./run-server.sh
+# 推荐：使用启动脚本（自动配置环境）
+./run-server.sh          # Linux/Mac
+# 或
+.\run-server.ps1         # Windows
+
+# 或直接运行
+python3 server.py        # Linux/Mac
+python server.py         # Windows
 ```
 
 ### 4. 重启 Claude Desktop
