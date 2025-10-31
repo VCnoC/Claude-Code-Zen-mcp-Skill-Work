@@ -26,12 +26,10 @@
 
 ### 环境要求
 
-**必需**：
+**可选**：
 - ✅ [Claude Desktop](https://claude.ai/download)
 - ✅ [Node.js](https://nodejs.org/) >= 14.0.0
 - ✅ [Python](https://www.python.org/) >= 3.8（Zen MCP Server 需要）
-
-**可选**：
 - ✅ [Git](https://git-scm.com/downloads)（如果从 GitHub 克隆）
 
 ### 安装方式
@@ -148,13 +146,13 @@ claude-code-zen-installer
 编辑 `~/zen-mcp-server/.env`：
 
 ```bash
-# OpenAI API Key（必需，用于代码审查）
+# OpenAI API Key
 OPENAI_API_KEY=sk-your-openai-api-key-here
 
 # 指定允许的模型（留空表示使用默认模型，避免意外使用 gpt-5-pro）
 OPENAI_ALLOWED_MODELS=gpt-4,gpt-4-turbo,o1-mini,o1-preview
 
-# Google Gemini API Key（必需，用于文档生成）
+# Google Gemini API Key（用于文档生成）
 GEMINI_API_KEY=your-gemini-api-key-here
 
 # 启用所有工具（删除 docgen 以启用文档生成）
@@ -264,6 +262,77 @@ python server.py         # Windows
 | **codex-code-reviewer** | 5 维度代码审查 | 代码完成后检查质量 |
 | **simple-gemini** | 标准文档生成 | 生成 README、测试代码 |
 | **deep-gemini** | 深度技术分析 | 架构分析、性能优化 |
+
+---
+
+## 🛠️ Zen MCP Server 工具使用指南
+
+Zen MCP Server 提供了多个强大的工具，以下是两个核心工具的使用方法：
+
+### 1. ThinkDeep - 深度思考与扩展推理
+
+**功能**：提供扩展推理能力，挑战假设，发现边界情况，为复杂问题提供替代方案。
+
+**核心特性**：
+- 🧠 使用 Gemini 的专业思考模型进行增强推理
+- 🔍 提供第二意见，挑战 Claude 的分析
+- 💡 识别边缘情况和替代视角
+- ✅ 验证架构决策和设计模式
+- 📄 支持文件引用和图像分析
+- 🌐 自动识别需要网络搜索补充的领域
+
+**使用方法**： 
+ - 在 Claude 中直接输入类似“使用 clink 工具调用 deepthink 去思考”的指令（告诉 AI 即可）
+---
+
+### 2. Clink - CLI 到 CLI 桥接工具
+
+**功能**：连接外部 AI CLI（Gemini CLI、Codex CLI、Claude Code），在现有工作流中复用其能力。
+
+**使用方法**： 
+ - 在 Claude 中直接输入类似“使用 clink 工具调用 codex 检查代码”的指令（告诉 AI 即可）
+
+**核心特性**：
+- 🔗 连接多个 CLI：在 Codex 中调用 Gemini，在 Gemini 中调用 Codex
+- 📦 完整对话连续性：响应参与同一对话线程
+- 🎭 基于角色的提示：预配置角色（planner、codereviewer、default）
+- 🌐 完整 CLI 能力：Gemini 可使用自己的网络搜索、文件工具
+- 💾 Token 效率：文件引用而非完整内容，节省 token
+- 🔄 跨工具协作：结合 `planner` → `clink` → `codereview` 形成强大工作流
+
+**可用角色**：
+
+| 角色 | 用途 | 示例 |
+|------|------|------|
+| `default` | 一般问题、摘要、快速回答 | `"Use clink to ask gemini about React 19 features"` |
+| `planner` | 战略规划，多阶段方法 | `"clink with gemini planner to map out microservices migration"` |
+| `codereviewer` | 代码分析，关注严重级别 | `"Use clink codereviewer role to review auth.py for security"` |
+
+
+**配置要求**：
+
+确保相关 CLI 已安装和配置：
+- [Claude Code](https://www.anthropic.com/claude-code)
+- [Gemini CLI](https://github.com/google-gemini/gemini-cli)：`npm install -g @google/gemini-cli`
+- [Codex CLI](https://docs.sourcegraph.com/codex)
+
+**⚠️ 安全提示**：
+
+Clink 启动的 CLI 代理具有宽松的权限标志（Gemini 使用 `--yolo`，Codex 使用 `--dangerously-bypass-approvals-and-sandbox`），以便它们可以通过 MCP 自主编辑文件和运行工具。如果这超出了你的需求范围，可以：
+- 移除这些标志（CLI 仍可打开/读取文件并报告发现）
+- 在角色提示中添加停止词/护栏
+- 完全禁用 clink
+- 仅在完全信任的工作区中保留预设配置
+
+**工具对比**：
+
+| 工具 | 用途 |
+|------|------|
+| `clink` | 利用外部 CLI 能力（Gemini 网络搜索、1M 上下文）、跨 CLI 协作 |
+| `chat` | Zen 内直接模型到模型对话 |
+| `planner` | Zen 原生规划工作流，带步骤验证 |
+| `codereview` | Zen 结构化代码审查，带严重级别 |
+| `thinkdeep` | 扩展特定分析、挑战假设、架构决策 |
 
 ---
 
