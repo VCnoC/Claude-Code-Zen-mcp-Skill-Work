@@ -204,9 +204,12 @@ DISABLED_TOOLS=
 cd ~/zen-mcp-server
 
 # 推荐：使用启动脚本（自动配置环境）
-./run-server.sh          # Linux/Mac
-# 或
-.\run-server.ps1         # Windows
+# Linux/Mac 用户
+chmod +x run-server.sh
+./run-server.sh
+
+# Windows 用户
+.\run-server.ps1
 
 # 或直接运行
 python3 server.py        # Linux/Mac
