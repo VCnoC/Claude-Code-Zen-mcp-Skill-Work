@@ -150,47 +150,28 @@ claude-code-zen-installer
 OPENAI_API_KEY=sk-your-openai-api-key-here
 
 # 指定允许的模型（留空表示使用默认模型，避免意外使用 gpt-5-pro）
-OPENAI_ALLOWED_MODELS=gpt-4,gpt-4-turbo,o1-mini,o1-preview
+OPENAI_ALLOWED_MODELS=gpt-5
 
 # Google Gemini API Key（用于文档生成）
 GEMINI_API_KEY=your-gemini-api-key-here
 
 # 启用所有工具（删除 docgen 以启用文档生成）
 DISABLED_TOOLS=
+
+# 在 conf/cli_clinets/codex.json 中添加 --skip-git-repo-check 过 git 仓库的信任检查(现在版本已经填上)
+ "additional_args": [
+    "--json",
+    "--dangerously-bypass-approvals-and-sandbox",
+    "--skip-git-repo-check"
+  ]
 ```
 
 > 📌 **获取 API Key**：
 > - OpenAI: https://platform.openai.com/api-keys
 > - Google Gemini: https://makersuite.google.com/app/apikey
-
-### 2. 配置 Claude Desktop
-
-编辑 Claude Desktop 的 MCP 配置文件：
-
-**配置文件路径**：
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Linux**: `~/.config/Claude/claude_desktop_config.json`
-
-**配置内容**（参考）：
-
-```json
-{
-  "mcpServers": {
-    "zen": {
-      "command": "python3",
-      "args": ["/path/to/zen-mcp-server/server.py"],
-      "env": {
-        "OPENAI_API_KEY": "sk-your-key-here",
-        "GEMINI_API_KEY": "your-gemini-key-here"
-      }
-    }
-  }
-}
-```
+> - 第三方中转站
 
 > 💡 **注意**：
-> - Linux/Mac 使用 `python3`
 > - Windows 使用 `python` 或 `python3`（取决于安装方式）
 > - 路径示例：
 >   - Linux/Mac: `"/home/username/zen-mcp-server/server.py"`
@@ -214,17 +195,19 @@ chmod +x run-server.sh
 # 或直接运行
 python3 server.py        # Linux/Mac
 python server.py         # Windows
+
+启动脚本会提供交互式配置选项，根据实际情况选择后，会自动将 MCP 配置写入 .claude.json 文件
 ```
 
-### 4. 重启 Claude Desktop
+### 4. 重启 Claude code
 
-完全关闭 Claude Desktop，然后重新启动。
+完全关闭 Claude code，然后重新启动。
 
 ---
 
 ## ✅ 验证安装
 
-启动 Claude Desktop，输入：
+启动 Claude code，输入：
 
 ```
 请使用 main-router 帮我分析当前可用的技能
