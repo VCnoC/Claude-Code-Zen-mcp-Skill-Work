@@ -375,8 +375,8 @@ Claude-Code-Zen-mcp-Skill-Work/
 │   ├── codex-code-reviewer/        # 代码质量审查
 │   ├── simple-gemini/              # 标准文档生成
 │   └── deep-gemini/                # 深度技术分析
-├── AGENTS.md                        # 全局规则和 P1-P4 阶段定义
-├── CLAUDE.md                        # 全局工作流规则
+├── CLAUDE.md                        # 全局规则(G1-G11)、P1-P4 阶段定义和工作流（主配置文件）
+├── AGENTS.md                        # 历史参考文件（项目现已统一使用 CLAUDE.md）
 ├── LICENSE                          # Apache 2.0 License
 └── README.md                        # 项目说明（本文件）
 
@@ -389,8 +389,8 @@ Claude-Code-Zen-mcp-Skill-Work/
 
 | 文档 | 说明 |
 |------|------|
-| [AGENTS.md](AGENTS.md) | 全局规则和 P1-P4 阶段定义 |
-| [CLAUDE.md](CLAUDE.md) | 全局工作流规则（需复制到 `~/.claude/`） |
+| [CLAUDE.md](CLAUDE.md) | 全局规则(G1-G11)、P1-P4 阶段定义和工作流（需复制到 `~/.claude/`）|
+| [AGENTS.md](AGENTS.md) | 历史参考文件（项目现已统一使用 CLAUDE.md）|
 | [LICENSE](LICENSE) | Apache 2.0 开源许可证 |
 
 **NPM 包专属文档**（仅在 `npx claude-code-zen-installer` 下载的包中）：

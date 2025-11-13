@@ -10,7 +10,7 @@ description: Intelligent skill router that analyzes user requests and automatica
 This skill serves as the **central intelligence hub** that analyzes user requests and automatically routes them to the most appropriate skill(s) for execution. It acts as a smart dispatcher, understanding user intent and orchestrating the right tools for the job.
 
 **Core Capabilities:**
-- Standards-based routing (follows AGENTS.md/CLAUDE.md)
+- Standards-based routing (follows CLAUDE.md)
 - Intent analysis and classification
 - Skill matching and selection
 - Multi-skill orchestration (sequential or parallel)
@@ -23,8 +23,8 @@ This skill serves as the **central intelligence hub** that analyzes user request
 - **Specialized Skills**: Execute their specific tasks when invoked by router
 
 **Standards Compliance:**
-- **MUST read** global and project AGENTS.md/CLAUDE.md before routing
-- Apply standards hierarchy: Global AGENTS.md > Project AGENTS.md > Global CLAUDE.md > Project CLAUDE.md
+- **MUST read** global and project CLAUDE.md before routing
+- Apply standards hierarchy: Global CLAUDE.md > Project CLAUDE.md
 - All routing decisions must align with documented rules and workflows
 
 **Active Task Monitoring (CRITICAL - Router Must Not Be Lazy):**
@@ -89,7 +89,7 @@ Main Router MUST actively monitor the entire task lifecycle and proactively invo
 
 **Router's Decision Process:**
 ```
-User Request → Read Standards (AGENTS.md/CLAUDE.md) → Intent Analysis → Skill Matching → Auto/Manual Decision → Execution
+User Request → Read Standards (CLAUDE.md) → Intent Analysis → Skill Matching → Auto/Manual Decision → Execution
 ```
 
 **Operation Modes:**
@@ -124,7 +124,7 @@ User Request → Read Standards (AGENTS.md/CLAUDE.md) → Intent Analysis → Sk
    决策：[what was decided]
    理由：[why this decision was made]
    置信度：[low/medium/high/very_high]
-   标准依据：[AGENTS.md G1, P2要求, etc.]
+   标准依据：[CLAUDE.md G1, P2要求, etc.]
    已记录到 auto_log.md
    ```
 
@@ -205,7 +205,7 @@ User Request → Read Standards (AGENTS.md/CLAUDE.md) → Intent Analysis → Sk
 - 5-dimension quality check (quality, security, performance, architecture, documentation)
 - Iterative fix cycles (max 5 iterations)
 - User approval required before fixes
-- Based on AGENTS.md and CLAUDE.md standards
+- Based on CLAUDE.md standards
 
 **Tool:** `mcp__zen__codereview`
 
@@ -232,7 +232,7 @@ User Request → Read Standards (AGENTS.md/CLAUDE.md) → Intent Analysis → Sk
 - Two modes: Interactive (default) and Automated
 - Document types: PROJECTWIKI, README, CHANGELOG, ADR, plan.md
 - Test code generation with codex validation
-- Follows AGENTS.md/CLAUDE.md standards
+- Follows CLAUDE.md standards
 
 **Tool:** `mcp__zen__clink` (launches gemini CLI in WSL)
 
@@ -296,7 +296,7 @@ User Request → Read Standards (AGENTS.md/CLAUDE.md) → Intent Analysis → Sk
 **Key Features:**
 - Two-stage workflow: planner (decomposition) → consensus (validation)
 - Multi-model evaluation (codex, gemini, gpt-5)
-- Standards-based planning (AGENTS.md/CLAUDE.md)
+- Standards-based planning (CLAUDE.md)
 - Mermaid dependency graphs
 - Risk assessment tables
 
@@ -336,24 +336,19 @@ Before ANY routing decision, **MUST complete** the following two sub-phases:
 Read the following files to understand project-specific rules and workflows:
 
 **a) Read Global Standards:**
-- **Global AGENTS.md**: `/home/vc/.claude/AGENTS.md`
-  - Extract: Global rules (G1-G8), phase requirements (P1-P4), routing mechanism
-  - Key focus: Which phase user is in, execution permissions, documentation requirements
 - **Global CLAUDE.md**: `/home/vc/.claude/CLAUDE.md`
+  - Extract: Global rules (G1-G11), phase requirements (P1-P4), routing mechanism, core principles
+  - Key focus: Which phase user is in, execution permissions, documentation requirements
   - Extract: Model development workflow, ethics principles, reproducibility requirements
 
 **b) Read Project-Specific Standards (if exist):**
-- **Project AGENTS.md**: `./AGENTS.md` (current directory)
-  - Extract: Project-specific rules, custom workflows, overrides
 - **Project CLAUDE.md**: `./CLAUDE.md` (current directory)
-  - Extract: Project-specific model development rules
+  - Extract: Project-specific rules, custom workflows, overrides
 
 **Standards Priority Hierarchy (when conflicts):**
-1. Global AGENTS.md (highest priority)
-2. Project AGENTS.md (overrides global)
-3. Global CLAUDE.md
-4. Project CLAUDE.md
-5. PROJECTWIKI.md (lowest priority)
+1. Global CLAUDE.md (highest priority)
+2. Project CLAUDE.md (overrides global)
+3. PROJECTWIKI.md (lowest priority)
 
 #### Phase 0.2: MCP Capability Reference (Optional Discovery)
 
@@ -622,7 +617,7 @@ Example: "同时生成计划和README"
     - zen-chat over zen-thinkdeep (unless "调查" or "bug" mentioned)
     - Direct execution over complex skills when unclear
   - **Log all auto-decisions** with rationale for transparency
-  - Standards compliance: Always follows AGENTS.md/CLAUDE.md rules
+  - Standards compliance: Always follows CLAUDE.md rules
 
 - **Exception - Only Ask User When**:
   - Blocking errors (environment missing, dependency errors)
@@ -635,7 +630,7 @@ Example: "同时生成计划和README"
 自动选择：{selected_tool}
 置信度：{confidence_score}%
 理由：{rationale based on standards and intent}
-标准依据：{relevant AGENTS.md/CLAUDE.md rules}
+标准依据：{relevant CLAUDE.md rules}
 
 开始执行...
 ```
@@ -663,7 +658,7 @@ Router Internal Analysis:
 **Part A: Standards Reading**
 ```
 Standards Reading:
-a) Global AGENTS.md (/home/vc/.claude/AGENTS.md):
+a) Global CLAUDE.md (/home/vc/.claude/CLAUDE.md):
    - G1: 文档一等公民 - 代码变更必须同步更新文档
    - G3: 无执行许可场景 - 需要用户明确同意
    - Current phase: P3 (执行方案) - just completed code generation
@@ -672,14 +667,14 @@ b) Global CLAUDE.md (/home/vc/.claude/CLAUDE.md):
    - 代码规范：清晰、可读
    - 质量门槛：覆盖率 ≥ 70%
 
-c) Project AGENTS.md (./AGENTS.md): [If exists]
+c) Project CLAUDE.md (./CLAUDE.md): [If exists]
    - Project-specific rules
 
 d) Project CLAUDE.md (./CLAUDE.md): [If exists]
    - Model-specific requirements
 
 Standards-Based Decision:
-- P3 phase → Code review recommended after code changes (AGENTS.md requirement)
+- P3 phase → Code review recommended after code changes (CLAUDE.md requirement)
 - G1 rule → Must check if documentation was updated
 - User approval needed before fixes (G3)
 ```
@@ -982,9 +977,9 @@ Execution: Sequential (Task 1 must complete before Task 2)
 [全自动模式] 检测到用户请求"全程自动化"，启动全自动工作流。
 
 Step 0: Standards Loading
-- 读取 Global AGENTS.md: P1→P2→P3 workflow, G1 文档一等公民
+- 读取 Global CLAUDE.md: P1→P2→P3 workflow, G1 文档一等公民
 - 读取 Global CLAUDE.md: 模型开发原则
-- 读取 Project AGENTS.md: [项目特定规则]
+- 读取 Project CLAUDE.md: [项目特定规则]
 
 Step 1: Intent Analysis
 - 检测到多任务顺序工作流
@@ -996,14 +991,14 @@ Step 2: Auto-Routing Execution (NO USER CONFIRMATION)
 自动选择: zen-thinkdeep
 置信度: 75%
 理由: 需要深度分析，符合 P1 阶段要求
-标准依据: AGENTS.md P1 - 分析问题
+标准依据: CLAUDE.md P1 - 分析问题
 → 立即执行 zen-thinkdeep...
 
 [全自动模式 - 任务 2: 制定优化计划]
 自动选择: plan-down
 置信度: 90%
 理由: 明确规划意图，符合 P2 阶段要求
-标准依据: AGENTS.md P2 - 制定方案，G11 强制使用 plan-down
+标准依据: CLAUDE.md P2 - 制定方案，G11 强制使用 plan-down
 → 立即执行 plan-down...
 
 自动选择: simple-gemini
@@ -1016,7 +1011,7 @@ Step 2: Auto-Routing Execution (NO USER CONFIRMATION)
 自动选择: codex-code-reviewer
 置信度: 95%
 理由: 明确代码审查意图，符合 P3 阶段要求
-标准依据: AGENTS.md P3 - 执行方案后需审查，G11 强制使用 codex
+标准依据: CLAUDE.md P3 - 执行方案后需审查，G11 强制使用 codex
 → 立即执行 codex-code-reviewer...
 
 [全自动模式 - 执行计划]
@@ -1026,7 +1021,7 @@ Step 2: Auto-Routing Execution (NO USER CONFIRMATION)
 3. simple-gemini → 生成 PROJECTWIKI.md 和 README.md
 4. codex-code-reviewer → 全面代码质量审查
 
-标准依据: AGENTS.md (P1→P2→P3), CLAUDE.md (质量原则)
+标准依据: CLAUDE.md (P1→P2→P3), CLAUDE.md (质量原则)
 平均置信度: 81.25%
 
 ⚠️ 注意：全程无需用户确认，自动执行所有步骤。
@@ -1438,10 +1433,10 @@ Router Analysis:
   - Think at each stage: "Should I invoke a skill here?"
   - **Being lazy is FORBIDDEN** - always use proper skills
 
-- **Standards-First Approach**: ALWAYS read AGENTS.md/CLAUDE.md before routing decisions
-  - Global AGENTS.md: `/home/vc/.claude/AGENTS.md`
+- **Standards-First Approach**: ALWAYS read CLAUDE.md before routing decisions
   - Global CLAUDE.md: `/home/vc/.claude/CLAUDE.md`
-  - Project AGENTS.md: `./AGENTS.md` (if exists)
+  - Global CLAUDE.md: `/home/vc/.claude/CLAUDE.md`
+  - Project CLAUDE.md: `./CLAUDE.md` (if exists)
   - Project CLAUDE.md: `./CLAUDE.md` (if exists)
 
 - **MCP-Aware Routing**: Optimistic assumption with lazy verification
@@ -1505,7 +1500,7 @@ Router Analysis:
   - zen-chat over zen-thinkdeep (unless "调查" or "bug" mentioned)
   - Direct execution over complex skills when unclear
 
-- **Context-Aware**: Consider project state, recent activity, git status, and AGENTS.md phase
+- **Context-Aware**: Consider project state, recent activity, git status, and CLAUDE.md phase
   - Leverage serena memory tools for project context (if discovered)
   - Use git status to inform routing decisions
 

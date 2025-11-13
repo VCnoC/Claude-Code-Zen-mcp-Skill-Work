@@ -7,7 +7,7 @@ description: Systematic code review workflow using zen mcp's codex tool. Use thi
 
 ## Overview
 
-This skill provides a systematic, iterative code review workflow powered by zen mcp's codex tool. It automatically checks recently modified code files against project standards (AGENTS.md and CLAUDE.md requirements), presents identified issues to users for approval, applies fixes, and re-validates until code quality standards are met or the maximum iteration limit is reached.
+This skill provides a systematic, iterative code review workflow powered by zen mcp's codex tool. It automatically checks recently modified code files against project standards (CLAUDE.md requirements), presents identified issues to users for approval, applies fixes, and re-validates until code quality standards are met or the maximum iteration limit is reached.
 
 **Operation Modes:**
 - **Interactive Mode (Default)**: Present issues to user, wait for approval before applying fixes
@@ -186,8 +186,11 @@ After codex returns the review results:
                if is_style_issue(issue):
                    apply_fix(issue)
 
-       # Log all auto-decisions to auto_log.md for transparency
-       log_to_auto_log_md(fixed_issues, skipped_issues, rationale, confidence, standards_met)
+       # IMPORTANT: This skill does NOT directly write to auto_log.md
+       # Instead, it outputs [自动决策记录] sections (like the example above)
+       # main-router will collect these sections at task completion and
+       # use simple-gemini to generate the unified auto_log.md file
+       # See CLAUDE.md for the complete auto_log mechanism
    ```
 
 #### Step 3: Apply Fixes
@@ -197,7 +200,7 @@ After codex returns the review results:
 
 1. Apply fixes to the identified issues
 2. Use appropriate tools (Edit, Write, etc.) to modify code
-3. Follow project coding standards from AGENTS.md and CLAUDE.md
+3. Follow project coding standards from CLAUDE.md
 4. Document changes made
 
 **Automation Mode Transparency (Log to auto_log.md):**
@@ -271,8 +274,7 @@ When the cycle terminates, provide a final report:
 ## Code Quality Standards
 
 This skill enforces standards defined in:
-- **AGENTS.md**: Global rules (G1-G8), phase-specific requirements (P1-P4)
-- **CLAUDE.md**: Model development workflow, ethics, reproducibility, explainability
+- **CLAUDE.md**: Global rules (G1-G11), phase-specific requirements (P1-P4), model development workflow
 - **Project-specific**: PROJECTWIKI.md architecture decisions and conventions
 
 Key quality dimensions checked:
@@ -297,13 +299,13 @@ See `references/code_quality_standards.md` for detailed criteria.
 
 - **Tool Errors**: If `mcp__zen__codereview` fails, report to user and offer manual review
 - **Ambiguous Issues**: When codex findings are unclear, seek user clarification before fixing
-- **Conflicting Standards**: If AGENTS.md and CLAUDE.md conflict, prioritize AGENTS.md (global rules)
+- **Conflicting Standards**: If global and project-specific CLAUDE.md conflict, prioritize global CLAUDE.md
 
 ## Resources
 
 ### references/code_quality_standards.md
 
-Detailed quality standards extracted from AGENTS.md and CLAUDE.md. Load this reference when:
+Detailed quality standards extracted from CLAUDE.md. Load this reference when:
 - Detailed quality criteria are needed
 - User questions specific standards
 - Ambiguous quality issues require clarification
@@ -528,12 +530,17 @@ Parameters:
 - **Interactive Mode (Default)**: Always prioritize user consent before applying code changes
 - **Full Automation Mode**: Auto-apply fixes based on severity and safety analysis, with full transparency
 - **Final Validation Mode**: Enforces minimum 2 passes (codereview + clink) for project completion
-- Maintains compatibility with AGENTS.md workflow (P3: 执行方案, P4: 错误处理)
+- Maintains compatibility with CLAUDE.md workflow (P3: 执行方案, P4: 错误处理)
 - **🚨 CRITICAL - automation_mode Management**:
   - **Three-Layer Architecture**: This skill follows the global automation_mode architecture
   - **Router (Layer 1)**: Only main-router judges and sets `automation_mode` based on user's initial request
   - **Transmission (Layer 2)**: Router passes automation_mode to this skill via context `[AUTOMATION_MODE: true/false]`
   - **Skill (Layer 3 - READ ONLY)**: This skill ONLY reads automation_mode, never judges or modifies it
   - **❌ FORBIDDEN**: Do NOT ask user "是否需要自动化执行?" or check for automation keywords
-  - **Automated Mode (automation_mode=true)**: All decisions logged to `auto_log.md` with reason, confidence, standards
+  - **Automated Mode (automation_mode=true)**: All decisions logged via `[自动决策记录]` output sections (see CLAUDE.md for auto_log mechanism)
+- **CRITICAL - auto_log.md Generation Mechanism**:
+  - This skill **DOES NOT** directly write to `auto_log.md` file
+  - In automation_mode=true, outputs `[自动决策记录]` sections with decisions, rationale, confidence, and standards
+  - main-router collects all such sections at task completion and uses simple-gemini to generate unified `auto_log.md`
+  - File location: Project root directory `auto_log.md` (runtime audit log, not version controlled)
 - Final validation mode activated when user mentions "项目结束" / "最终验证" / "最终质量验证"

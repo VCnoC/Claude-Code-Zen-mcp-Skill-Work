@@ -1,8 +1,8 @@
 # 代码质量标准参考
 
-本文档汇总了从 AGENTS.md 和 CLAUDE.md 中提取的代码质量标准，供 codex 代码审查时参考。
+本文档汇总了从 CLAUDE.md 中提取的代码质量标准，供 codex 代码审查时参考。
 
-## 一、全局规则（来自 AGENTS.md）
+## 一、全局规则（来自 CLAUDE.md）
 
 ### G1｜文档一等公民
 - 凡涉及代码变更必须同步维护 `PROJECTWIKI.md` 和 `CHANGELOG.md`

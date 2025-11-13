@@ -37,3 +37,35 @@ install.ps1
 .DS_Store
 Thumbs.db
 
+# 项目规划文件（不上传 GitHub）
+plan.md
+
+# 运行时审计日志（仅自动化模式生成，不纳入版本控制）
+auto_log.md
+
+# Python 缓存和编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Claude Code 项目配置（本地个人配置，不提交）
+.claude/settings.local.json
+.claude/*.local.json
+

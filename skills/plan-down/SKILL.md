@@ -41,7 +41,7 @@ User Request → Phase 0 (chat: Method Clear?) → [Conditional Phase 1] → Pha
 
 **Phase 0 (Method Clarity Assessment - ALWAYS):**
 - **chat tool**: Judge if user provides clear implementation method
-- **Main Claude**: Gather context from AGENTS.md/CLAUDE.md/PROJECTWIKI.md
+- **Main Claude**: Gather context from CLAUDE.md/PROJECTWIKI.md
 
 **Phase 1 (Method Clarification/Enrichment - CONDITIONAL):**
 - **Path A (Interactive + Unclear)**: chat multi-round dialogue with user to clarify
@@ -139,12 +139,10 @@ flowchart TD
 2. **Gather Initial Context:**
 
    **a) Read Global Standards (CRITICAL):**
-   - **Global AGENTS.md**: `/home/vc/.claude/AGENTS.md` - 全局规则 (G1-G11)、阶段要求 (P1-P4)
-   - **Global CLAUDE.md**: `/home/vc/.claude/CLAUDE.md` - 模型开发工作流、伦理、可复现性
+   - **Global CLAUDE.md**: `/home/vc/.claude/CLAUDE.md` - 全局规则 (G1-G11)、阶段要求 (P1-P4)、模型开发工作流
 
    **b) Read Project-Specific Standards (if exist):**
-   - **Project AGENTS.md**: `./AGENTS.md` - 项目特定规则和流程
-   - **Project CLAUDE.md**: `./CLAUDE.md` - 项目特定模型开发规范
+   - **Project CLAUDE.md**: `./CLAUDE.md` - 项目特定规则和流程
 
    **c) Read Project Documentation:**
    - PROJECTWIKI.md - 项目知识库
@@ -153,10 +151,8 @@ flowchart TD
    - docs/adr/*.md - 架构决策记录
 
    **Standards Priority (when conflicts):**
-   1. Global AGENTS.md (最高优先级)
-   2. Project AGENTS.md
-   3. Global CLAUDE.md
-   4. Project CLAUDE.md
+   1. Global CLAUDE.md (最高优先级)
+   2. Project CLAUDE.md
    5. PROJECTWIKI.md
 
 3. **Invoke zen-mcp chat to assess method clarity:**
@@ -171,7 +167,7 @@ flowchart TD
      已收集的项目上下文：
      - 项目类型：[from PROJECTWIKI/README]
      - 技术栈：[from context]
-     - 现有规范：[from AGENTS.md/CLAUDE.md]
+     - 现有规范：[from CLAUDE.md]
 
      判断标准：
      - '方法清晰' = 用户明确说明了要做什么、怎么做、关键步骤是什么
@@ -249,7 +245,7 @@ Parameters:
   项目上下文：
   - 技术栈：[from context]
   - 现有架构：[from PROJECTWIKI]
-  - 规范要求：[from AGENTS.md/CLAUDE.md]
+  - 规范要求：[from CLAUDE.md]
 
   请进行以下思考：
   1. 这个想法的核心目标是什么？
@@ -283,7 +279,7 @@ Parameters:
   评审要点：
   1. 方案的可行性和完整性
   2. 是否符合项目技术栈和架构
-  3. 是否遵循 AGENTS.md/CLAUDE.md 规范
+  3. 是否遵循 CLAUDE.md 规范
   4. 步骤分解是否合理
   5. 里程碑设置是否清晰
   6. 优化建议
@@ -354,9 +350,8 @@ Parameters:
   约束：[从实践方法中提取]
 
   **必须遵循的规范（CRITICAL）：**
-  [从 Global AGENTS.md 提取的关键规则，如 G1-G11]
-  [从 Global CLAUDE.md 提取的核心原则]
-  [从 Project AGENTS.md/CLAUDE.md 提取的项目特定规则]
+  [从 Global CLAUDE.md 提取的关键规则，如 G1-G11 和核心原则]
+  [从 Project CLAUDE.md 提取的项目特定规则（如有）]
 
   例如：
   - G1: 文档一等公民 - 代码变更必须同步更新 PROJECTWIKI.md 和 CHANGELOG.md
@@ -371,7 +366,7 @@ Parameters:
   4. 预估工作量和时间
   5. 潜在风险和缓解措施
   6. 验收标准
-  7. **遵循 AGENTS.md/CLAUDE.md 规范的具体措施**
+  7. **遵循 CLAUDE.md 规范的具体措施**
 
   使用清晰的层级结构组织任务。"
 
@@ -459,7 +454,7 @@ Generate final plan.md directly from planner output:
 ## 规范遵循 (Standards Compliance)
 
 ### 全局规范 (Global Standards)
-**来源**: `/home/vc/.claude/AGENTS.md`, `/home/vc/.claude/CLAUDE.md`
+**来源**: `/home/vc/.claude/CLAUDE.md`, `/home/vc/.claude/CLAUDE.md`
 
 **关键规则**:
 - **G1 - 文档一等公民**: 代码变更必须同步更新 PROJECTWIKI.md 和 CHANGELOG.md
@@ -469,7 +464,7 @@ Generate final plan.md directly from planner output:
 - **CLAUDE 原则三 - 基线优先**: 先简单模型，后复杂模型
 
 ### 项目规范 (Project-Specific Standards)
-**来源**: `./AGENTS.md`, `./CLAUDE.md` (如果存在)
+**来源**: `./CLAUDE.md`, `./CLAUDE.md` (如果存在)
 
 - [项目特定规则 1]
 - [项目特定规则 2]
@@ -673,7 +668,7 @@ Phase 3: AUTO-generate plan.md (no user approval needed)
   [自动决策记录]
   决策：方法清晰且完整，自动批准并生成 plan.md
   置信度：high
-  标准依据：用户提供了5个明确步骤，符合 AGENTS.md 规划要求
+  标准依据：用户提供了5个明确步骤，符合 CLAUDE.md 规划要求
   已记录到 auto_log.md
   ```
 
@@ -1051,10 +1046,10 @@ User Request → Phase 0 (chat judges: "方法模糊") → Phase 1B (clink → c
   - Phase 3: Direct plan.md generation (no intermediate consensus review)
 - **consensus Usage**: ONLY in Phase 1 Path B (Automatic + Unclear) to validate implementation method, NOT to review planner output
 - **Workflow Simplification**: Removed redundant consensus review of planner output for efficiency
-- **Standards-Based Planning**: CRITICAL - All plans must comply with global and project-specific AGENTS.md/CLAUDE.md standards
+- **Standards-Based Planning**: CRITICAL - All plans must comply with global and project-specific CLAUDE.md standards
 - **Standards Priority Hierarchy**:
-  1. Global AGENTS.md (`/home/vc/.claude/AGENTS.md`) - 最高优先级
-  2. Project AGENTS.md (`./AGENTS.md`) - 项目覆盖全局
+  1. Global CLAUDE.md (`/home/vc/.claude/CLAUDE.md`) - 最高优先级
+  2. Project CLAUDE.md (`./CLAUDE.md`) - 项目覆盖全局
   3. Global CLAUDE.md (`/home/vc/.claude/CLAUDE.md`)
   4. Project CLAUDE.md (`./CLAUDE.md`)
   5. PROJECTWIKI.md - 项目特定文档
@@ -1065,7 +1060,7 @@ User Request → Phase 0 (chat judges: "方法模糊") → Phase 1B (clink → c
 - **Expert Validation**: planner has built-in expert model validation (use_assistant_model=true)
 - **Output Format**: Final plan.md includes dedicated "Standards Compliance" section listing applicable rules
 - **Compliance Verification**: planner ensures tasks include standards adherence
-- **Compatibility**: Works seamlessly with AGENTS.md workflow (especially P2: 制定方案)
+- **Compatibility**: Works seamlessly with CLAUDE.md workflow (especially P2: 制定方案)
 - **Flexibility**: Supports branching (alternative approaches) and revision (refine steps) via planner
 - **Quality Assurance**: Method validation (Phase 0/1) + planner's expert validation ensures high-quality plans
 - **Tool Roles**:

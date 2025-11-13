@@ -66,7 +66,7 @@ This skill supports two operation modes based on the `automation_mode` state:
 
 **Main Claude's Autonomous Decision Criteria:**
 - **Outline**: Check completeness, structure alignment with templates
-- **Document**: Verify adherence to standards (AGENTS.md/CLAUDE.md)
+- **Document**: Verify adherence to standards (CLAUDE.md)
 - **Test Code**: Ensure quality meets requirements (coverage ≥ 70%)
 - **Only escalate to user** if critical issues or ambiguities are detected
 
@@ -118,15 +118,15 @@ User Request
 2. **Gather Context:**
    - Read relevant code files if needed
    - Check existing documentation structure
-   - Identify project standards from AGENTS.md and CLAUDE.md
+   - Identify project standards from CLAUDE.md
    - **Context File Selection:**
      - **Interactive Mode (automation_mode = false)**: Ask user: "Do you need me to reference existing code/files for this document?"
      - **Automated Mode (automation_mode = true)**: Auto-analyze project structure and select relevant files, log decision to auto_log.md
 
 3. **Identify Document Requirements:**
-   - For AGENTS.md/CLAUDE.md mandated documents (PROJECTWIKI.md, CHANGELOG.md, ADRs):
+   - For CLAUDE.md mandated documents (PROJECTWIKI.md, CHANGELOG.md, ADRs):
      - Apply standards from `references/doc_templates.md`
-     - Follow AGENTS.md 项目知识库内容结构与生成规则统一模板
+     - Follow CLAUDE.md 项目知识库内容结构与生成规则统一模板
    - For other documents:
      - Determine appropriate structure
      - Identify key sections needed
@@ -141,7 +141,7 @@ Parameters:
 - cli_name: "gemini"  # Launches 'gemini' command in WSL
 - prompt: "Generate a detailed outline for [document type] covering [scope].
           Context: [provide all gathered context]
-          Requirements: [standards from AGENTS.md/CLAUDE.md if applicable]
+          Requirements: [standards from CLAUDE.md if applicable]
           Purpose: [document purpose]
           Audience: [target readers]"
 - files: [list of relevant file paths for context - absolute paths]
@@ -195,7 +195,7 @@ IF [AUTOMATION_MODE: true] → Automated Mode
    - Check completeness: All required sections present?
    - Check structure: Follows template requirements?
    - Check scope: Covers all identified needs?
-   - Check standards: Aligns with AGENTS.md/CLAUDE.md?
+   - Check standards: Aligns with CLAUDE.md?
 
 2. **Decision Logic (based on automation_mode=true from router):**
    ```
@@ -241,7 +241,7 @@ Parameters:
           - Use Mermaid diagrams where appropriate (```mermaid blocks)
           - Write in clear, professional Chinese (or English if specified)
           - Include code examples where helpful
-          - Ensure consistency with AGENTS.md and CLAUDE.md standards
+          - Ensure consistency with CLAUDE.md standards
 
           Context: [all gathered context]
           Referenced files: [files to reference]"
@@ -302,7 +302,7 @@ IF [AUTOMATION_MODE: true] → Automated Mode
      - All required sections present?
      - Mermaid diagrams included?
      - Links are valid?
-     - Consistent with AGENTS.md/CLAUDE.md standards?
+     - Consistent with CLAUDE.md standards?
    - **For other documents**: Check completeness, clarity, and consistency
 
 2. **Decision Logic (based on automation_mode=true from router):**
@@ -606,7 +606,7 @@ IF [AUTOMATION_MODE: true] → Automated Mode
 
 ## Document Type Standards
 
-### AGENTS.md/CLAUDE.md Mandated Documents
+### CLAUDE.md Mandated Documents
 
 For these documents, **strictly follow** templates in `references/doc_templates.md`:
 
@@ -739,7 +739,7 @@ Key parameters for test validation:
 
 ### references/doc_templates.md
 
-Complete templates for AGENTS.md/CLAUDE.md mandated documents. Load when:
+Complete templates for CLAUDE.md mandated documents. Load when:
 - Writing PROJECTWIKI.md, CHANGELOG.md, ADR, or plan.md
 - User asks about document structure standards
 - Need to verify format compliance
@@ -887,7 +887,7 @@ Codex CLI 检查结果：
 
 质量检查：
 - ✅ 结构完整（所有 MADR 章节）
-- ✅ 符合 AGENTS.md 标准
+- ✅ 符合 CLAUDE.md 标准
 - ✅ 格式正确
 - ✅ 无失效链接
 
@@ -984,11 +984,19 @@ Codex CLI 发现 3 个改进点：
   - **Transmission (Layer 2)**: Router passes automation_mode to this skill via context
   - **Skill (Layer 3 - READ ONLY)**: This skill ONLY reads automation_mode, never judges or modifies it
 - **Automated Mode (automation_mode=true)**: Main Claude autonomously reviews and approves based on objective quality criteria, significantly speeding up the workflow
-  - **All decisions logged to auto_log.md**: Every auto-approval is recorded with reason, confidence, and standards met
+  - **All decisions logged via output sections**: Every auto-approval is recorded in output (see auto_log mechanism below)
   - Triggered when router sets automation_mode=true (detects keywords like "自动化" / "全自动" / "不需要确认")
 - **Interactive Mode (automation_mode=false, Default)**: User approval gates ensure quality and alignment, suitable for important or sensitive tasks
 - **Mode Detection**: This skill MUST read automation_mode from context, NEVER ask user or check for keywords
 - **Status Consistency**: All behavior must align with the automation_mode status set by router
+
+**CRITICAL - auto_log.md Generation Mechanism:**
+- This skill **DOES NOT** directly write to `auto_log.md` file
+- In automation_mode=true, outputs decision records in structured format within the response text
+- main-router collects all decision records at task completion and uses simple-gemini itself to generate unified `auto_log.md`
+- File location: Project root directory `auto_log.md` (runtime audit log, not version controlled)
+- Output format: Include decision type, rationale, confidence, and standards met in structured sections
+- See `references/auto_log_template.md` for complete log structure and examples
 
 - Codex CLI session (also in WSL) ensures test code meets engineering standards
 - This workflow separates concerns:

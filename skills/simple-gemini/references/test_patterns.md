@@ -1,838 +1,1003 @@
-# 测试代码模式与最佳实践
+# 测试模式与最佳实践 (Test Patterns and Best Practices)
 
-本文档提供测试代码编写的最佳实践、常用模式和示例，供 gemini 编写测试代码时参考。
-
-## 一、测试组织原则
-
-### 1.1 文件组织
-
-**命名约定**：
-- Python: `test_<module>.py` 或 `<module>_test.py`
-- JavaScript: `<module>.test.js` 或 `<module>.spec.js`
-- 测试文件应与被测试文件结构对应
-
-**目录结构示例**：
-
-```
-项目根目录/
-├── src/
-│   ├── features.py
-│   ├── model_training.py
-│   └── utils/
-│       └── helpers.py
-└── tests/
-    ├── test_features.py
-    ├── test_model_training.py
-    └── utils/
-        └── test_helpers.py
-```
-
-### 1.2 测试分类
-
-**单元测试（Unit Tests）**：
-- 测试单个函数或类
-- 隔离外部依赖（使用 mock）
-- 快速执行（< 1 秒）
-
-**集成测试（Integration Tests）**：
-- 测试多个组件协作
-- 可能涉及数据库、文件系统
-- 执行时间较长
-
-**端到端测试（E2E Tests）**：
-- 测试完整用户流程
-- 涉及真实环境
-- 执行最慢，数量最少
+> **用途**: 为测试代码生成提供标准模板和最佳实践，确保测试覆盖率和代码质量。
 
 ---
 
-## 二、AAA 模式（Arrange-Act-Assert）
+## 目录
 
-### 2.1 基本结构
-
-每个测试应遵循 AAA 模式：
-
-```python
-def test_example():
-    # Arrange（准备）：设置测试数据和环境
-    user = User(name="Alice", age=30)
-
-    # Act（执行）：调用被测试的功能
-    result = user.is_adult()
-
-    # Assert（断言）：验证结果
-    assert result == True
-```
-
-### 2.2 清晰的分段
-
-使用注释或空行分隔三个阶段：
-
-```python
-def test_calculate_total_price():
-    # Arrange
-    cart = ShoppingCart()
-    cart.add_item(Item(name="Book", price=29.99))
-    cart.add_item(Item(name="Pen", price=5.00))
-
-    # Act
-    total = cart.calculate_total()
-
-    # Assert
-    assert total == 34.99
-```
+1. [测试覆盖率要求](#测试覆盖率要求)
+2. [单元测试模式](#单元测试模式)
+3. [集成测试模式](#集成测试模式)
+4. [端到端测试模式](#端到端测试模式)
+5. [测试命名规范](#测试命名规范)
+6. [测试组织结构](#测试组织结构)
+7. [Mock 和 Stub 模式](#mock-和-stub-模式)
+8. [测试数据管理](#测试数据管理)
+9. [性能测试模式](#性能测试模式)
+10. [常见反模式](#常见反模式)
 
 ---
 
-## 三、测试命名规范
+## 测试覆盖率要求
 
-### 3.1 描述性命名
+### 覆盖率目标 (G9 合规)
 
-测试名称应清晰描述：
-1. 被测试的功能
-2. 测试的场景
-3. 预期的结果
+- **默认目标**: 85% 语句覆盖率
+- **最低阈值**: 70% 语句覆盖率
+- **推荐目标**: 90%+ 对于核心业务逻辑
 
-**模式**：`test_<功能>_<场景>_<预期结果>`
+### 覆盖率读取机制
 
-**示例**：
-
-```python
-# 好的命名
-def test_calculate_discount_with_valid_coupon_returns_discounted_price():
-    pass
-
-def test_login_with_invalid_password_raises_authentication_error():
-    pass
-
-def test_get_user_by_id_when_user_not_found_returns_none():
-    pass
-
-# 不好的命名（过于简略）
-def test_discount():
-    pass
-
-def test_login():
-    pass
-
-def test_get_user():
-    pass
+```markdown
+测试代码生成时，必须从上下文读取 `[COVERAGE_TARGET: X%]`：
+- 由 main-router 在任务开始时设置
+- simple-gemini / codex-code-reviewer 只读取不判断
+- 默认值：85%（用户未指定时）
+- 最低值：70%（低于此值触发警告）
 ```
 
-### 3.2 中文命名（可选）
+### 覆盖率类型
 
-对于中文项目，可以使用中文测试名称：
+1. **语句覆盖率 (Statement Coverage)**: 每一行代码是否被执行
+2. **分支覆盖率 (Branch Coverage)**: 每个条件分支是否被测试
+3. **函数覆盖率 (Function Coverage)**: 每个函数是否被调用
+4. **路径覆盖率 (Path Coverage)**: 所有可能的执行路径
 
-```python
-def test_计算折扣_使用有效优惠券_返回折扣价格():
-    pass
-
-def test_用户登录_密码错误_抛出认证异常():
-    pass
-```
+**优先级**: 语句覆盖 > 分支覆盖 > 函数覆盖 > 路径覆盖
 
 ---
 
-## 四、Fixture 和 Setup/Teardown
+## 单元测试模式
 
-### 4.1 Pytest Fixtures（推荐）
-
-**基本 Fixture**：
+### Python 单元测试模板 (pytest)
 
 ```python
+# tests/test_user_service.py
 import pytest
+from unittest.mock import Mock, patch
+from src.services.user_service import UserService
+from src.models.user import User
+
+
+class TestUserService:
+    """用户服务单元测试"""
+
+    @pytest.fixture
+    def user_service(self):
+        """创建测试用的用户服务实例"""
+        return UserService()
+
+    @pytest.fixture
+    def sample_user(self):
+        """创建测试用户数据"""
+        return User(
+            id="usr_001",
+            username="testuser",
+            email="test@example.com"
+        )
+
+    def test_create_user_success(self, user_service, sample_user):
+        """测试创建用户 - 成功场景"""
+        # Arrange (准备)
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "SecurePass123"
+        }
+
+        # Act (执行)
+        result = user_service.create_user(user_data)
+
+        # Assert (断言)
+        assert result is not None
+        assert result.username == user_data["username"]
+        assert result.email == user_data["email"]
+        assert result.id is not None
+
+    def test_create_user_duplicate_email(self, user_service):
+        """测试创建用户 - 邮箱重复"""
+        # Arrange
+        user_data = {
+            "username": "testuser",
+            "email": "existing@example.com",
+            "password": "SecurePass123"
+        }
+
+        # Mock 数据库返回已存在的用户
+        with patch.object(user_service, 'db') as mock_db:
+            mock_db.find_by_email.return_value = Mock()
+
+            # Act & Assert
+            with pytest.raises(ValueError, match="Email already exists"):
+                user_service.create_user(user_data)
+
+    def test_create_user_invalid_email(self, user_service):
+        """测试创建用户 - 无效邮箱格式"""
+        # Arrange
+        user_data = {
+            "username": "testuser",
+            "email": "invalid-email",  # 无效格式
+            "password": "SecurePass123"
+        }
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="Invalid email format"):
+            user_service.create_user(user_data)
+
+    @pytest.mark.parametrize("username,email,expected", [
+        ("user1", "user1@test.com", True),
+        ("user2", "user2@test.com", True),
+        ("", "empty@test.com", False),  # 空用户名
+        ("user3", "invalid", False),    # 无效邮箱
+    ])
+    def test_create_user_parametrized(self, user_service, username, email, expected):
+        """参数化测试 - 多种输入场景"""
+        user_data = {
+            "username": username,
+            "email": email,
+            "password": "Pass123"
+        }
+
+        if expected:
+            result = user_service.create_user(user_data)
+            assert result is not None
+        else:
+            with pytest.raises(ValueError):
+                user_service.create_user(user_data)
+```
+
+### JavaScript 单元测试模板 (Jest)
+
+```javascript
+// tests/userService.test.js
+import { UserService } from '../src/services/UserService';
+import { User } from '../src/models/User';
+
+describe('UserService', () => {
+  let userService;
+
+  beforeEach(() => {
+    // 每个测试前重置服务实例
+    userService = new UserService();
+  });
+
+  afterEach(() => {
+    // 清理资源
+    jest.clearAllMocks();
+  });
+
+  describe('createUser', () => {
+    it('should create user successfully', async () => {
+      // Arrange
+      const userData = {
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'SecurePass123'
+      };
+
+      // Act
+      const result = await userService.createUser(userData);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.username).toBe(userData.username);
+      expect(result.email).toBe(userData.email);
+      expect(result.id).toBeTruthy();
+    });
+
+    it('should throw error when email already exists', async () => {
+      // Arrange
+      const userData = {
+        username: 'testuser',
+        email: 'existing@example.com',
+        password: 'SecurePass123'
+      };
+
+      // Mock database to return existing user
+      jest.spyOn(userService.db, 'findByEmail').mockResolvedValue({ id: '123' });
+
+      // Act & Assert
+      await expect(userService.createUser(userData))
+        .rejects
+        .toThrow('Email already exists');
+    });
+
+    it('should throw error for invalid email format', async () => {
+      // Arrange
+      const userData = {
+        username: 'testuser',
+        email: 'invalid-email',
+        password: 'SecurePass123'
+      };
+
+      // Act & Assert
+      await expect(userService.createUser(userData))
+        .rejects
+        .toThrow('Invalid email format');
+    });
+  });
+
+  describe('getUserById', () => {
+    it('should return user when found', async () => {
+      // Arrange
+      const userId = 'usr_001';
+      const mockUser = new User({
+        id: userId,
+        username: 'testuser',
+        email: 'test@example.com'
+      });
+
+      jest.spyOn(userService.db, 'findById').mockResolvedValue(mockUser);
+
+      // Act
+      const result = await userService.getUserById(userId);
+
+      // Assert
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should return null when user not found', async () => {
+      // Arrange
+      const userId = 'nonexistent';
+      jest.spyOn(userService.db, 'findById').mockResolvedValue(null);
+
+      // Act
+      const result = await userService.getUserById(userId);
+
+      // Assert
+      expect(result).toBeNull();
+    });
+  });
+});
+```
+
+---
+
+## 集成测试模式
+
+### API 集成测试模板 (Python + Flask)
+
+```python
+# tests/integration/test_user_api.py
+import pytest
+from flask import Flask
+from src.app import create_app
+from src.database import db
+
+
+class TestUserAPI:
+    """用户 API 集成测试"""
+
+    @pytest.fixture
+    def app(self):
+        """创建测试应用"""
+        app = create_app('testing')
+        with app.app_context():
+            db.create_all()
+            yield app
+            db.session.remove()
+            db.drop_all()
+
+    @pytest.fixture
+    def client(self, app):
+        """创建测试客户端"""
+        return app.test_client()
+
+    def test_register_user_success(self, client):
+        """测试用户注册 API - 成功"""
+        # Arrange
+        user_data = {
+            "username": "newuser",
+            "email": "newuser@test.com",
+            "password": "SecurePass123"
+        }
+
+        # Act
+        response = client.post('/api/v1/users/register', json=user_data)
+
+        # Assert
+        assert response.status_code == 201
+        data = response.get_json()
+        assert data['username'] == user_data['username']
+        assert data['email'] == user_data['email']
+        assert 'id' in data
+        assert 'password' not in data  # 确保密码不返回
+
+    def test_register_user_duplicate_email(self, client):
+        """测试用户注册 API - 邮箱重复"""
+        # Arrange
+        user_data = {
+            "username": "user1",
+            "email": "duplicate@test.com",
+            "password": "Pass123"
+        }
+
+        # 先创建一个用户
+        client.post('/api/v1/users/register', json=user_data)
+
+        # 尝试用相同邮箱再次注册
+        response = client.post('/api/v1/users/register', json=user_data)
+
+        # Assert
+        assert response.status_code == 409
+        data = response.get_json()
+        assert 'error' in data
+        assert 'already exists' in data['error'].lower()
+
+    def test_login_success(self, client):
+        """测试用户登录 API - 成功"""
+        # Arrange - 先注册用户
+        register_data = {
+            "username": "loginuser",
+            "email": "login@test.com",
+            "password": "SecurePass123"
+        }
+        client.post('/api/v1/users/register', json=register_data)
+
+        # Act - 登录
+        login_data = {
+            "email": "login@test.com",
+            "password": "SecurePass123"
+        }
+        response = client.post('/api/v1/auth/login', json=login_data)
+
+        # Assert
+        assert response.status_code == 200
+        data = response.get_json()
+        assert 'access_token' in data
+        assert 'refresh_token' in data
+        assert data['user']['email'] == login_data['email']
+
+    def test_get_user_with_auth(self, client):
+        """测试获取用户信息 - 需要认证"""
+        # Arrange - 注册并登录获取 token
+        register_data = {
+            "username": "authuser",
+            "email": "auth@test.com",
+            "password": "Pass123"
+        }
+        client.post('/api/v1/users/register', json=register_data)
+
+        login_response = client.post('/api/v1/auth/login', json={
+            "email": "auth@test.com",
+            "password": "Pass123"
+        })
+        token = login_response.get_json()['access_token']
+
+        # Act - 使用 token 获取用户信息
+        headers = {'Authorization': f'Bearer {token}'}
+        response = client.get('/api/v1/users/me', headers=headers)
+
+        # Assert
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['email'] == 'auth@test.com'
+
+    def test_get_user_without_auth(self, client):
+        """测试获取用户信息 - 未认证"""
+        # Act
+        response = client.get('/api/v1/users/me')
+
+        # Assert
+        assert response.status_code == 401
+```
+
+---
+
+## 端到端测试模式
+
+### E2E 测试模板 (Playwright / Cypress)
+
+```javascript
+// tests/e2e/userFlow.spec.js
+import { test, expect } from '@playwright/test';
+
+test.describe('User Registration and Login Flow', () => {
+  test.beforeEach(async ({ page }) => {
+    // 每个测试前访问首页
+    await page.goto('http://localhost:3000');
+  });
+
+  test('should complete full user registration flow', async ({ page }) => {
+    // Step 1: 导航到注册页面
+    await page.click('text=Sign Up');
+    await expect(page).toHaveURL(/.*\/register/);
+
+    // Step 2: 填写注册表单
+    await page.fill('input[name="username"]', 'testuser');
+    await page.fill('input[name="email"]', 'test@example.com');
+    await page.fill('input[name="password"]', 'SecurePass123');
+    await page.fill('input[name="confirmPassword"]', 'SecurePass123');
+
+    // Step 3: 提交表单
+    await page.click('button[type="submit"]');
+
+    // Step 4: 验证注册成功
+    await expect(page).toHaveURL(/.*\/dashboard/);
+    await expect(page.locator('text=Welcome, testuser')).toBeVisible();
+  });
+
+  test('should show error for invalid email', async ({ page }) => {
+    // Step 1: 导航到注册页面
+    await page.click('text=Sign Up');
+
+    // Step 2: 填写无效邮箱
+    await page.fill('input[name="email"]', 'invalid-email');
+    await page.fill('input[name="password"]', 'Pass123');
+
+    // Step 3: 提交表单
+    await page.click('button[type="submit"]');
+
+    // Step 4: 验证错误提示
+    await expect(page.locator('text=Invalid email format')).toBeVisible();
+  });
+
+  test('should login successfully with valid credentials', async ({ page }) => {
+    // Prerequisite: 假设用户已注册
+    // （在真实 E2E 测试中，可能需要先注册或使用测试数据库）
+
+    // Step 1: 导航到登录页面
+    await page.click('text=Login');
+
+    // Step 2: 填写登录表单
+    await page.fill('input[name="email"]', 'test@example.com');
+    await page.fill('input[name="password"]', 'SecurePass123');
+
+    // Step 3: 提交表单
+    await page.click('button[type="submit"]');
+
+    // Step 4: 验证登录成功
+    await expect(page).toHaveURL(/.*\/dashboard/);
+    await expect(page.locator('text=Welcome back')).toBeVisible();
+  });
+
+  test('should persist user session after page refresh', async ({ page }) => {
+    // Step 1: 登录
+    await page.click('text=Login');
+    await page.fill('input[name="email"]', 'test@example.com');
+    await page.fill('input[name="password"]', 'SecurePass123');
+    await page.click('button[type="submit"]');
+
+    // Step 2: 刷新页面
+    await page.reload();
+
+    // Step 3: 验证会话保持
+    await expect(page).toHaveURL(/.*\/dashboard/);
+    await expect(page.locator('[data-testid="user-menu"]')).toBeVisible();
+  });
+});
+```
+
+---
+
+## 测试命名规范
+
+### 命名模式
+
+```
+test_<function>_<scenario>_<expected_result>
+```
+
+### 示例
+
+**✅ 好的命名**:
+```python
+def test_create_user_with_valid_data_returns_user_object():
+    pass
+
+def test_create_user_with_duplicate_email_raises_value_error():
+    pass
+
+def test_get_user_by_id_with_nonexistent_id_returns_none():
+    pass
+```
+
+**❌ 不好的命名**:
+```python
+def test_user():  # 太模糊
+    pass
+
+def test_create():  # 缺少上下文
+    pass
+
+def test_1():  # 完全无意义
+    pass
+```
+
+### JavaScript / TypeScript 命名
+
+```javascript
+// ✅ 好的命名
+describe('UserService', () => {
+  describe('createUser', () => {
+    it('should create user successfully with valid data', () => {});
+    it('should throw error when email already exists', () => {});
+    it('should throw error for invalid email format', () => {});
+  });
+});
+
+// ❌ 不好的命名
+describe('Tests', () => {
+  it('works', () => {});  // 太模糊
+  it('test1', () => {});  // 无意义
+});
+```
+
+---
+
+## 测试组织结构
+
+### Python 项目结构
+
+```
+project/
+├── src/
+│   ├── services/
+│   │   └── user_service.py
+│   ├── models/
+│   │   └── user.py
+│   └── api/
+│       └── user_api.py
+└── tests/
+    ├── unit/
+    │   ├── services/
+    │   │   └── test_user_service.py
+    │   └── models/
+    │       └── test_user.py
+    ├── integration/
+    │   └── test_user_api.py
+    ├── e2e/
+    │   └── test_user_flow.py
+    ├── fixtures/
+    │   └── user_fixtures.py
+    └── conftest.py
+```
+
+### JavaScript / TypeScript 项目结构
+
+```
+project/
+├── src/
+│   ├── services/
+│   │   └── UserService.ts
+│   ├── models/
+│   │   └── User.ts
+│   └── api/
+│       └── userApi.ts
+└── tests/
+    ├── unit/
+    │   ├── services/
+    │   │   └── UserService.test.ts
+    │   └── models/
+    │       └── User.test.ts
+    ├── integration/
+    │   └── userApi.test.ts
+    ├── e2e/
+    │   └── userFlow.spec.ts
+    └── fixtures/
+        └── userFixtures.ts
+```
+
+---
+
+## Mock 和 Stub 模式
+
+### Python Mock 示例
+
+```python
+from unittest.mock import Mock, patch, MagicMock
+
+# 1. Mock 对象
+def test_with_mock_object():
+    # 创建 Mock 对象
+    mock_db = Mock()
+    mock_db.find_by_id.return_value = {"id": "123", "name": "Test"}
+
+    # 使用 Mock
+    service = UserService(db=mock_db)
+    result = service.get_user("123")
+
+    # 验证调用
+    mock_db.find_by_id.assert_called_once_with("123")
+    assert result["name"] == "Test"
+
+# 2. Patch 装饰器
+@patch('src.services.user_service.Database')
+def test_with_patch_decorator(mock_database):
+    mock_database.return_value.find_by_id.return_value = {"id": "123"}
+
+    service = UserService()
+    result = service.get_user("123")
+
+    assert result["id"] == "123"
+
+# 3. Patch 上下文管理器
+def test_with_patch_context():
+    with patch('src.services.user_service.Database') as mock_db:
+        mock_db.return_value.find_by_id.return_value = {"id": "123"}
+
+        service = UserService()
+        result = service.get_user("123")
+
+        assert result["id"] == "123"
+
+# 4. Mock 方法返回值
+def test_mock_side_effect():
+    mock_api = Mock()
+    # 模拟多次调用返回不同值
+    mock_api.get_data.side_effect = ["data1", "data2", "data3"]
+
+    assert mock_api.get_data() == "data1"
+    assert mock_api.get_data() == "data2"
+    assert mock_api.get_data() == "data3"
+
+# 5. Mock 异常
+def test_mock_exception():
+    mock_api = Mock()
+    mock_api.get_data.side_effect = ConnectionError("Network error")
+
+    with pytest.raises(ConnectionError):
+        mock_api.get_data()
+```
+
+### JavaScript Mock 示例
+
+```javascript
+// 1. Jest Mock 函数
+test('should call callback with data', () => {
+  const mockCallback = jest.fn();
+  const data = { id: '123', name: 'Test' };
+
+  processData(data, mockCallback);
+
+  expect(mockCallback).toHaveBeenCalledWith(data);
+  expect(mockCallback).toHaveBeenCalledTimes(1);
+});
+
+// 2. Mock 模块
+jest.mock('../src/services/Database', () => {
+  return {
+    Database: jest.fn().mockImplementation(() => {
+      return {
+        findById: jest.fn().mockResolvedValue({ id: '123' })
+      };
+    })
+  };
+});
+
+// 3. Spy 函数
+test('should spy on method', () => {
+  const user = new User();
+  const spy = jest.spyOn(user, 'save');
+
+  user.update({ name: 'New Name' });
+
+  expect(spy).toHaveBeenCalled();
+  spy.mockRestore();
+});
+
+// 4. Mock 实现
+test('should mock implementation', () => {
+  const mockFn = jest.fn().mockImplementation((x) => x * 2);
+
+  expect(mockFn(2)).toBe(4);
+  expect(mockFn(3)).toBe(6);
+});
+
+// 5. Mock 返回值
+test('should mock return values', () => {
+  const mockFn = jest.fn()
+    .mockReturnValueOnce('first')
+    .mockReturnValueOnce('second')
+    .mockReturnValue('default');
+
+  expect(mockFn()).toBe('first');
+  expect(mockFn()).toBe('second');
+  expect(mockFn()).toBe('default');
+  expect(mockFn()).toBe('default');
+});
+```
+
+---
+
+## 测试数据管理
+
+### Fixture 模式
+
+**Python (pytest)**:
+```python
+# tests/conftest.py
+import pytest
+from src.models.user import User
 
 @pytest.fixture
 def sample_user():
     """创建测试用户"""
-    return User(name="Alice", age=30)
-
-def test_user_is_adult(sample_user):
-    assert sample_user.is_adult() == True
-```
-
-**Fixture 作用域**：
-
-```python
-@pytest.fixture(scope="function")  # 每个测试函数执行一次（默认）
-def temp_file():
-    file = create_temp_file()
-    yield file
-    file.close()
-
-@pytest.fixture(scope="module")  # 每个模块执行一次
-def database_connection():
-    conn = create_connection()
-    yield conn
-    conn.close()
-
-@pytest.fixture(scope="session")  # 整个测试会话执行一次
-def app_config():
-    return load_config()
-```
-
-### 4.2 setUp 和 tearDown（Unittest）
-
-```python
-import unittest
-
-class TestCalculator(unittest.TestCase):
-    def setUp(self):
-        """每个测试方法前执行"""
-        self.calc = Calculator()
-
-    def tearDown(self):
-        """每个测试方法后执行"""
-        self.calc = None
-
-    def test_add(self):
-        result = self.calc.add(2, 3)
-        self.assertEqual(result, 5)
-```
-
----
-
-## 五、Mock 和 Patch
-
-### 5.1 为什么使用 Mock
-
-- 隔离外部依赖（数据库、API、文件系统）
-- 加快测试速度
-- 模拟难以复现的场景（网络错误、边界条件）
-
-### 5.2 使用 unittest.mock
-
-**Mock 函数**：
-
-```python
-from unittest.mock import Mock
-
-def test_send_notification():
-    # Arrange
-    mock_email_service = Mock()
-    notifier = Notifier(email_service=mock_email_service)
-
-    # Act
-    notifier.send("Hello", to="user@example.com")
-
-    # Assert
-    mock_email_service.send_email.assert_called_once_with(
-        subject="Hello",
-        to="user@example.com"
+    return User(
+        id="usr_001",
+        username="testuser",
+        email="test@example.com"
     )
-```
-
-**Patch 模块**：
-
-```python
-from unittest.mock import patch
-
-@patch('mymodule.external_api_call')
-def test_fetch_data(mock_api):
-    # Arrange
-    mock_api.return_value = {"data": "test"}
-
-    # Act
-    result = fetch_user_data(user_id=123)
-
-    # Assert
-    assert result["data"] == "test"
-    mock_api.assert_called_once_with(user_id=123)
-```
-
-**Mock 文件操作**：
-
-```python
-from unittest.mock import mock_open, patch
-
-def test_read_config():
-    mock_data = "key=value"
-
-    with patch("builtins.open", mock_open(read_data=mock_data)):
-        config = read_config_file("config.txt")
-        assert config["key"] == "value"
-```
-
-### 5.3 Pytest-mock
-
-```python
-def test_database_query(mocker):
-    # Arrange
-    mock_db = mocker.patch('mymodule.database.query')
-    mock_db.return_value = [{"id": 1, "name": "Alice"}]
-
-    # Act
-    users = get_all_users()
-
-    # Assert
-    assert len(users) == 1
-    assert users[0]["name"] == "Alice"
-```
-
----
-
-## 六、断言最佳实践
-
-### 6.1 清晰的断言消息
-
-```python
-# 好的断言
-assert len(users) == 2, f"Expected 2 users, but got {len(users)}"
-
-# 更好的断言（使用 pytest）
-import pytest
-
-def test_user_count():
-    users = get_users()
-    assert len(users) == 2, \
-        f"Expected 2 users, but got {len(users)}: {users}"
-```
-
-### 6.2 具体的断言
-
-```python
-# 不好：过于宽泛
-assert result  # 只检查非空
-
-# 好：具体检查
-assert result == [1, 2, 3]
-assert result["status"] == "success"
-assert result["data"]["user_id"] == 123
-```
-
-### 6.3 异常断言
-
-**Pytest**：
-
-```python
-import pytest
-
-def test_divide_by_zero():
-    with pytest.raises(ZeroDivisionError):
-        result = 10 / 0
-
-def test_invalid_input_raises_value_error():
-    with pytest.raises(ValueError, match="Invalid input"):
-        process_data("invalid")
-```
-
-**Unittest**：
-
-```python
-import unittest
-
-class TestValidator(unittest.TestCase):
-    def test_invalid_email_raises_error(self):
-        with self.assertRaises(ValueError):
-            validate_email("invalid-email")
-
-        # 检查异常消息
-        with self.assertRaisesRegex(ValueError, "Invalid email"):
-            validate_email("invalid-email")
-```
-
----
-
-## 七、边界条件和边缘情况
-
-### 7.1 常见边界条件
-
-**数值边界**：
-
-```python
-def test_age_validation():
-    # 正常值
-    assert is_valid_age(25) == True
-
-    # 边界值
-    assert is_valid_age(0) == True
-    assert is_valid_age(150) == True
-
-    # 超出边界
-    assert is_valid_age(-1) == False
-    assert is_valid_age(151) == False
-```
-
-**集合边界**：
-
-```python
-def test_list_operations():
-    # 空列表
-    assert sum_list([]) == 0
-
-    # 单元素
-    assert sum_list([5]) == 5
-
-    # 多元素
-    assert sum_list([1, 2, 3]) == 6
-```
-
-### 7.2 特殊值
-
-```python
-def test_special_values():
-    # None
-    assert process_data(None) == None
-
-    # 空字符串
-    assert validate_string("") == False
-
-    # 空白字符串
-    assert validate_string("   ") == False
-
-    # 极大值
-    assert calculate(float('inf')) == float('inf')
-
-    # NaN
-    import math
-    assert math.isnan(calculate(float('nan')))
-```
-
----
-
-## 八、参数化测试
-
-### 8.1 Pytest 参数化
-
-```python
-import pytest
-
-@pytest.mark.parametrize("input,expected", [
-    (0, 0),
-    (1, 1),
-    (2, 4),
-    (3, 9),
-    (-2, 4),
-])
-def test_square(input, expected):
-    assert square(input) == expected
-```
-
-**多个参数**：
-
-```python
-@pytest.mark.parametrize("a,b,expected", [
-    (1, 2, 3),
-    (0, 0, 0),
-    (-1, 1, 0),
-    (10, -5, 5),
-])
-def test_add(a, b, expected):
-    assert add(a, b) == expected
-```
-
-### 8.2 Unittest 参数化（使用 subTest）
-
-```python
-import unittest
-
-class TestMath(unittest.TestCase):
-    def test_square(self):
-        test_cases = [
-            (0, 0),
-            (1, 1),
-            (2, 4),
-            (3, 9),
-            (-2, 4),
-        ]
-
-        for input, expected in test_cases:
-            with self.subTest(input=input):
-                self.assertEqual(square(input), expected)
-```
-
----
-
-## 九、测试数据管理
-
-### 9.1 测试数据生成
-
-**使用 Factory**：
-
-```python
-class UserFactory:
-    @staticmethod
-    def create(name="Test User", age=30, email=None):
-        if email is None:
-            email = f"{name.lower().replace(' ', '_')}@test.com"
-        return User(name=name, age=age, email=email)
-
-def test_user_creation():
-    user = UserFactory.create(name="Alice", age=25)
-    assert user.name == "Alice"
-    assert user.email == "alice@test.com"
-```
-
-**使用 Faker（生成随机数据）**：
-
-```python
-from faker import Faker
-
-fake = Faker()
-
-def test_with_random_data():
-    user = User(
-        name=fake.name(),
-        email=fake.email(),
-        address=fake.address()
-    )
-    assert user.is_valid()
-```
-
-### 9.2 测试数据文件
-
-```python
-import json
-import pytest
 
 @pytest.fixture
-def sample_data():
-    with open("tests/fixtures/sample_data.json") as f:
-        return json.load(f)
+def user_list():
+    """创建用户列表"""
+    return [
+        User(id=f"usr_{i:03d}", username=f"user{i}", email=f"user{i}@test.com")
+        for i in range(1, 6)
+    ]
 
-def test_process_data(sample_data):
-    result = process(sample_data)
-    assert result["status"] == "success"
+@pytest.fixture(scope="session")
+def database():
+    """会话级别的数据库 fixture"""
+    db = Database()
+    db.connect()
+    yield db
+    db.disconnect()
+```
+
+### Factory 模式
+
+```python
+# tests/factories.py
+from datetime import datetime
+
+class UserFactory:
+    """用户工厂"""
+
+    @staticmethod
+    def create(overrides=None):
+        """创建用户对象"""
+        defaults = {
+            "id": "usr_001",
+            "username": "testuser",
+            "email": "test@example.com",
+            "created_at": datetime.now()
+        }
+
+        if overrides:
+            defaults.update(overrides)
+
+        return User(**defaults)
+
+    @staticmethod
+    def create_batch(count, **kwargs):
+        """批量创建用户"""
+        return [
+            UserFactory.create({
+                **kwargs,
+                "id": f"usr_{i:03d}",
+                "username": f"user{i}",
+                "email": f"user{i}@test.com"
+            })
+            for i in range(1, count + 1)
+        ]
+
+# 使用示例
+def test_with_factory():
+    user = UserFactory.create({"username": "custom_user"})
+    users = UserFactory.create_batch(5)
 ```
 
 ---
 
-## 十、测试覆盖率
+## 性能测试模式
 
-### 10.1 覆盖率要求
-
-- **最低要求**：70% 行覆盖率
-- **推荐**：80-90% 行覆盖率
-- **关键模块**：100% 行覆盖率
-
-### 10.2 运行覆盖率检查
-
-```bash
-# Pytest with coverage
-pytest --cov=src --cov-report=html tests/
-
-# 只显示未覆盖的行
-pytest --cov=src --cov-report=term-missing tests/
-
-# 设置最低覆盖率要求
-pytest --cov=src --cov-fail-under=70 tests/
-```
-
-### 10.3 忽略特定代码
-
-```python
-def debug_function():  # pragma: no cover
-    """调试用函数，不需要测试"""
-    print("Debug info")
-```
-
----
-
-## 十一、完整示例
-
-### 11.1 Python 单元测试示例
-
-**被测试代码（src/calculator.py）**：
-
-```python
-class Calculator:
-    def add(self, a, b):
-        """加法"""
-        if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):
-            raise TypeError("Inputs must be numbers")
-        return a + b
-
-    def divide(self, a, b):
-        """除法"""
-        if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):
-            raise TypeError("Inputs must be numbers")
-        if b == 0:
-            raise ZeroDivisionError("Cannot divide by zero")
-        return a / b
-```
-
-**测试代码（tests/test_calculator.py）**：
+### 基准测试 (Benchmark)
 
 ```python
 import pytest
-from src.calculator import Calculator
+import time
 
-class TestCalculator:
-    """Calculator 类的测试套件"""
+@pytest.mark.benchmark
+def test_user_creation_performance(benchmark):
+    """基准测试：用户创建性能"""
 
-    @pytest.fixture
-    def calc(self):
-        """创建 Calculator 实例"""
-        return Calculator()
+    def create_user():
+        return UserService().create_user({
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "Pass123"
+        })
 
-    # ===== 加法测试 =====
+    result = benchmark(create_user)
+    assert result is not None
 
-    def test_add_positive_numbers(self, calc):
-        """测试加法 - 正数"""
-        # Arrange
-        a, b = 2, 3
-
-        # Act
-        result = calc.add(a, b)
-
-        # Assert
-        assert result == 5
-
-    def test_add_negative_numbers(self, calc):
-        """测试加法 - 负数"""
-        assert calc.add(-1, -1) == -2
-
-    def test_add_zero(self, calc):
-        """测试加法 - 零"""
-        assert calc.add(5, 0) == 5
-        assert calc.add(0, 5) == 5
-
-    @pytest.mark.parametrize("a,b,expected", [
-        (1, 2, 3),
-        (0, 0, 0),
-        (-1, 1, 0),
-        (0.1, 0.2, 0.3),
-    ])
-    def test_add_parametrized(self, calc, a, b, expected):
-        """测试加法 - 参数化"""
-        assert calc.add(a, b) == pytest.approx(expected)
-
-    def test_add_invalid_type_raises_type_error(self, calc):
-        """测试加法 - 无效类型"""
-        with pytest.raises(TypeError, match="Inputs must be numbers"):
-            calc.add("1", 2)
-
-    # ===== 除法测试 =====
-
-    def test_divide_positive_numbers(self, calc):
-        """测试除法 - 正数"""
-        assert calc.divide(10, 2) == 5
-
-    def test_divide_by_zero_raises_error(self, calc):
-        """测试除法 - 除以零"""
-        with pytest.raises(ZeroDivisionError, match="Cannot divide by zero"):
-            calc.divide(10, 0)
-
-    def test_divide_negative_numbers(self, calc):
-        """测试除法 - 负数"""
-        assert calc.divide(-10, 2) == -5
-        assert calc.divide(10, -2) == -5
-
-    def test_divide_invalid_type_raises_type_error(self, calc):
-        """测试除法 - 无效类型"""
-        with pytest.raises(TypeError):
-            calc.divide(10, "2")
+    # 验证性能指标
+    assert benchmark.stats['mean'] < 0.1  # 平均时间小于 100ms
 ```
 
-### 11.2 集成测试示例
-
-**被测试代码（src/user_service.py）**：
+### 负载测试 (Load Test)
 
 ```python
-class UserService:
-    def __init__(self, database, email_service):
-        self.database = database
-        self.email_service = email_service
+import concurrent.futures
 
-    def create_user(self, name, email):
-        """创建用户并发送欢迎邮件"""
-        # 验证邮箱格式
-        if "@" not in email:
-            raise ValueError("Invalid email format")
+def test_concurrent_user_creation():
+    """负载测试：并发创建用户"""
+    service = UserService()
+    user_count = 100
 
-        # 保存到数据库
-        user_id = self.database.save_user(name, email)
+    def create_user(index):
+        return service.create_user({
+            "username": f"user{index}",
+            "email": f"user{index}@test.com",
+            "password": "Pass123"
+        })
 
-        # 发送欢迎邮件
-        self.email_service.send_welcome_email(email, name)
+    # 并发创建用户
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(create_user, i) for i in range(user_count)]
+        results = [f.result() for f in concurrent.futures.as_completed(futures)]
 
-        return user_id
-```
-
-**测试代码（tests/test_user_service.py）**：
-
-```python
-import pytest
-from unittest.mock import Mock
-from src.user_service import UserService
-
-class TestUserService:
-    """UserService 集成测试"""
-
-    @pytest.fixture
-    def mock_database(self):
-        """创建 mock 数据库"""
-        db = Mock()
-        db.save_user.return_value = 123  # 返回用户 ID
-        return db
-
-    @pytest.fixture
-    def mock_email_service(self):
-        """创建 mock 邮件服务"""
-        return Mock()
-
-    @pytest.fixture
-    def user_service(self, mock_database, mock_email_service):
-        """创建 UserService 实例"""
-        return UserService(mock_database, mock_email_service)
-
-    def test_create_user_success(self, user_service, mock_database, mock_email_service):
-        """测试创建用户 - 成功"""
-        # Arrange
-        name = "Alice"
-        email = "alice@example.com"
-
-        # Act
-        user_id = user_service.create_user(name, email)
-
-        # Assert
-        assert user_id == 123
-        mock_database.save_user.assert_called_once_with(name, email)
-        mock_email_service.send_welcome_email.assert_called_once_with(email, name)
-
-    def test_create_user_invalid_email(self, user_service):
-        """测试创建用户 - 无效邮箱"""
-        with pytest.raises(ValueError, match="Invalid email format"):
-            user_service.create_user("Alice", "invalid-email")
-
-    def test_create_user_database_error(self, user_service, mock_database):
-        """测试创建用户 - 数据库错误"""
-        # Arrange
-        mock_database.save_user.side_effect = Exception("Database error")
-
-        # Act & Assert
-        with pytest.raises(Exception, match="Database error"):
-            user_service.create_user("Alice", "alice@example.com")
+    assert len(results) == user_count
+    assert all(r is not None for r in results)
 ```
 
 ---
 
-## 十二、测试代码质量检查清单
+## 常见反模式
 
-编写测试代码后，检查：
-
-### 基础质量
-- [ ] 每个测试函数只测试一个功能点
-- [ ] 测试名称清晰描述测试内容
-- [ ] 遵循 AAA 模式（Arrange-Act-Assert）
-- [ ] 没有重复代码（使用 fixture 或 helper 函数）
-
-### 覆盖完整性
-- [ ] 覆盖正常情况（happy path）
-- [ ] 覆盖边界条件（边界值、空值、极值）
-- [ ] 覆盖异常情况（错误输入、异常抛出）
-- [ ] 覆盖率 ≥ 70%
-
-### 断言质量
-- [ ] 断言具体且明确
-- [ ] 断言包含错误消息
-- [ ] 没有冗余断言
-
-### 独立性
-- [ ] 测试之间互不依赖
-- [ ] 测试顺序可以任意调整
-- [ ] 每个测试都有清理（teardown）
-
-### Mock 使用
-- [ ] 外部依赖已 mock
-- [ ] Mock 调用已验证
-- [ ] Mock 返回值合理
-
-### 可维护性
-- [ ] 代码易读易懂
-- [ ] 使用了适当的 fixture
-- [ ] 测试数据清晰
-- [ ] 有必要的注释
-
----
-
-## 十三、常见反模式（避免）
-
-### ❌ 测试实现细节而非行为
+### ❌ 反模式 1: 测试依赖顺序
 
 ```python
-# 不好：测试实现细节
-def test_sort_uses_quicksort():
-    assert sort_algorithm == "quicksort"
+# ❌ 不好：测试依赖执行顺序
+class TestBadOrder:
+    def test_01_create_user(self):
+        self.user_id = create_user()
 
-# 好：测试行为
-def test_sort_returns_sorted_list():
-    assert sort([3, 1, 2]) == [1, 2, 3]
-```
+    def test_02_update_user(self):
+        update_user(self.user_id)  # 依赖上一个测试
 
-### ❌ 测试过于复杂
-
-```python
-# 不好：一个测试做太多事情
-def test_everything():
-    user = create_user()
-    login(user)
-    create_post(user)
-    delete_post(user)
-    logout(user)
-    # 太多逻辑，难以定位问题
-
-# 好：拆分成多个测试
-def test_create_user():
-    user = create_user()
-    assert user is not None
-
-def test_user_can_login():
-    user = create_user()
-    result = login(user)
-    assert result == True
-```
-
-### ❌ 测试之间有依赖
-
-```python
-# 不好：测试有顺序依赖
-class TestUser:
-    user = None
-
-    def test_1_create_user(self):
-        self.user = create_user("Alice")
-
-    def test_2_update_user(self):
-        # 依赖 test_1_create_user
-        update_user(self.user, name="Bob")
-
-# 好：每个测试独立
-class TestUser:
+# ✅ 好：每个测试独立
+class TestGoodOrder:
     @pytest.fixture
-    def user(self):
-        return create_user("Alice")
+    def user_id(self):
+        return create_user()
 
     def test_create_user(self):
-        user = create_user("Alice")
-        assert user.name == "Alice"
+        user_id = create_user()
+        assert user_id is not None
 
-    def test_update_user(self, user):
-        update_user(user, name="Bob")
-        assert user.name == "Bob"
+    def test_update_user(self, user_id):
+        result = update_user(user_id)
+        assert result is True
 ```
 
-### ❌ 没有断言
+### ❌ 反模式 2: 过度 Mock
 
 ```python
-# 不好：只执行不验证
-def test_process_data():
-    process_data({"key": "value"})
-    # 没有断言，测试无意义
+# ❌ 不好：Mock 了所有依赖
+def test_too_much_mocking():
+    mock_db = Mock()
+    mock_cache = Mock()
+    mock_logger = Mock()
+    mock_validator = Mock()
+    mock_emailer = Mock()
+    # ... 过度 Mock，测试变得毫无意义
 
-# 好：有明确断言
-def test_process_data():
-    result = process_data({"key": "value"})
-    assert result["status"] == "success"
+# ✅ 好：只 Mock 外部依赖
+def test_appropriate_mocking():
+    # 只 Mock 真正的外部依赖（数据库、API 等）
+    with patch('src.services.external_api.ExternalAPI') as mock_api:
+        mock_api.return_value.get_data.return_value = {"key": "value"}
+        result = service.process_data()
+        assert result is not None
+```
+
+### ❌ 反模式 3: 测试实现细节
+
+```python
+# ❌ 不好：测试私有方法
+def test_private_method():
+    service = UserService()
+    result = service._validate_email("test@example.com")  # 测试私有方法
+    assert result is True
+
+# ✅ 好：测试公共接口
+def test_public_interface():
+    service = UserService()
+    user = service.create_user({
+        "email": "test@example.com",
+        "username": "testuser",
+        "password": "Pass123"
+    })
+    assert user.email == "test@example.com"  # 通过公共方法验证
+```
+
+### ❌ 反模式 4: 忽略边界条件
+
+```python
+# ❌ 不好：只测试正常路径
+def test_only_happy_path():
+    result = divide(10, 2)
+    assert result == 5
+
+# ✅ 好：测试边界条件
+def test_with_boundary_conditions():
+    assert divide(10, 2) == 5  # 正常情况
+    assert divide(0, 5) == 0   # 零除数
+    with pytest.raises(ZeroDivisionError):
+        divide(10, 0)  # 除零错误
+    assert divide(-10, 2) == -5  # 负数
 ```
 
 ---
 
-## 使用建议
+## 测试最佳实践总结
 
-1. **先写简单测试**：从正常情况开始，逐步添加边界和异常测试
-2. **保持测试简单**：每个测试只验证一个行为
-3. **使用 fixture**：减少重复代码，提高可维护性
-4. **参数化测试**：相似测试用参数化合并
-5. **Mock 外部依赖**：加快测试速度，提高可靠性
-6. **定期审查**：检查测试覆盖率和测试质量
+### AAA 模式（Arrange-Act-Assert）
+
+```python
+def test_with_aaa_pattern():
+    # Arrange（准备）：设置测试数据和前置条件
+    user_data = {"username": "test", "email": "test@example.com"}
+    service = UserService()
+
+    # Act（执行）：调用被测试的方法
+    result = service.create_user(user_data)
+
+    # Assert（断言）：验证结果
+    assert result is not None
+    assert result.username == user_data["username"]
+```
+
+### FIRST 原则
+
+- **Fast（快速）**: 测试应该快速执行
+- **Independent（独立）**: 测试之间不应相互依赖
+- **Repeatable（可重复）**: 测试结果应该一致
+- **Self-Validating（自验证）**: 测试应该有明确的通过/失败结果
+- **Timely（及时）**: 测试应该与代码同步编写
+
+### 测试金字塔
+
+```
+        /\
+       /  \        E2E Tests (10%)
+      /____\       - 少量关键流程测试
+     /      \
+    /        \     Integration Tests (20%)
+   /__________\    - 模块间交互测试
+  /            \
+ /              \  Unit Tests (70%)
+/________________\ - 大量单元测试
+```
+
+---
+
+## 使用指南
+
+### simple-gemini 使用此模板
+
+生成测试代码时，请参考 `references/test_patterns.md`：
+
+1. 选择合适的测试类型（单元/集成/E2E）
+2. 遵循 AAA 模式组织测试代码
+3. 确保测试覆盖率达到目标值（从上下文读取 `[COVERAGE_TARGET: X%]`）
+4. 包含正常路径和边界条件测试
+5. 使用清晰的测试命名
+
+### 覆盖率验证（codex-code-reviewer）
+
+验证测试代码时，确保：
+
+- 实际覆盖率 ≥ coverage_target（从上下文读取）
+- 包含边界条件和异常处理测试
+- 测试命名清晰、有意义
+- 避免常见反模式（过度 Mock、测试私有方法等）
+
+---
+
+## 质量检查清单
+
+生成测试代码时，确保通过以下检查：
+
+- [ ] 遵循 AAA 模式（Arrange-Act-Assert）
+- [ ] 测试命名清晰（`test_<function>_<scenario>_<expected>`）
+- [ ] 覆盖正常路径和边界条件
+- [ ] 适当使用 Mock/Stub（不过度 Mock）
+- [ ] 测试独立，不依赖执行顺序
+- [ ] 包含异常处理测试
+- [ ] 测试覆盖率达到目标值（≥ coverage_target）
+- [ ] 避免测试实现细节（测试公共接口）

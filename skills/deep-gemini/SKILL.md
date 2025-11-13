@@ -875,7 +875,7 @@ Top 3 瓶颈：
 - **Output Quality**: Deep analysis documents are evidence-based, well-structured, actionable, and include complexity metrics
 - **Mermaid Diagrams**: Strongly encouraged for architecture and flow analysis - docgen automates diagram generation
 - **Scope Control**: Start narrow and expand as needed - complexity analysis is resource-intensive
-- **Compatibility**: Works with AGENTS.md and CLAUDE.md standards for documentation quality
+- **Compatibility**: Works with CLAUDE.md standards for documentation quality
 - **WSL Integration**: clink serves as the bridge between Main Claude and gemini CLI in WSL; docgen operates in Zen MCP environment
 - **Tool Separation**: clink = analysis bridge, docgen = document generation workflow - each has distinct responsibilities
 - **🚨 CRITICAL - automation_mode Management**:
@@ -884,4 +884,10 @@ Top 3 瓶颈：
   - **Transmission (Layer 2)**: Router passes automation_mode to this skill via context `[AUTOMATION_MODE: true/false]`
   - **Skill (Layer 3 - READ ONLY)**: This skill ONLY reads automation_mode, never judges or modifies it
   - **❌ FORBIDDEN**: Do NOT ask user "是否需要自动化执行?" or check for automation keywords
-  - **Automated Mode (automation_mode=true)**: All decisions (document approval, save) auto-approved and logged to `auto_log.md` with reason, confidence, standards
+  - **Automated Mode (automation_mode=true)**: All decisions (document approval, save) auto-approved and logged via output sections (see auto_log mechanism below)
+- **CRITICAL - auto_log.md Generation Mechanism**:
+  - This skill **DOES NOT** directly write to `auto_log.md` file
+  - In automation_mode=true, outputs `[自动保存决策记录]` sections with decision type, rationale, confidence, and standards met
+  - main-router collects all decision records at task completion and uses simple-gemini to generate unified `auto_log.md`
+  - File location: Project root directory `auto_log.md` (runtime audit log, not version controlled)
+  - See `references/auto_log_template.md` for complete log structure and examples
