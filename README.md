@@ -9,13 +9,12 @@
 
 ## ✨ 核心特性
 
-- 📦 **开箱即用** - 包含 Zen MCP Server，一次克隆全部搞定
 - 🧠 **智能路由** - 自动选择最佳技能处理任务
 - 📊 **多阶段工作流** - P1(分析) → P2(方案) → P3(执行) → P4(修复)
 - 🔍 **5 维代码审查** - 质量、安全、性能、架构、文档全方位检查
 - 📝 **文档自动生成** - README、测试代码、项目知识库
 - 🌍 **跨平台支持** - Windows / macOS / Linux 全平台 （可能）
-
+- 🔗 **CLI 桥接工具** - 通过 Clink 连接 Gemini CLI、Codex CLI，实现跨工具协作
 ---
 
 > ⚠️ **重要提示**  
@@ -341,6 +340,55 @@ flowchart LR
 - **P2 制定方案** - 设计解决方案，生成 plan.md
 - **P3 执行方案** - 实施代码，自动检查质量，生成文档
 - **P4 错误处理** - 修复问题，验证修复
+
+---
+
+## 🔗 技能依赖关系
+
+```mermaid
+flowchart TD
+    User[用户请求] --> Router[main-router<br/>智能路由器]
+
+    Router --> P1[P1: 分析问题<br/>主模型执行]
+    Router --> P2[P2: 制定方案<br/>强制调用 plan-down]
+    Router --> P3[P3: 执行方案<br/>主模型 + 多技能协作]
+    Router --> P4[P4: 错误处理<br/>主模型 + 回归闸门]
+
+    P2 --> PlanDown[plan-down<br/>智能规划与任务分解]
+
+    P1 -.深度分析.-> ThinkDeep[zen-thinkdeep<br/>复杂问题深度调查]
+    P1 -.一般问答.-> Chat[zen-chat<br/>概念解释]
+
+    P3 --> Codex[codex-code-reviewer<br/>5 维质量检查]
+    P3 --> SimpleGemini[simple-gemini<br/>文档/测试生成]
+    P3 --> DeepGemini[deep-gemini<br/>深度分析文档]
+
+    P4 --> Codex
+    P4 --> Clink[zen-clink<br/>CLI 桥接]
+
+    Shared[shared<br/>共享资源] -.参数契约.-> Router
+    Shared -.模板.-> SimpleGemini
+    Shared -.模板.-> DeepGemini
+
+    style Router fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    style PlanDown fill:#2196F3,stroke:#1565C0,stroke-width:2px,color:#fff
+    style Codex fill:#FF9800,stroke:#E65100,stroke-width:2px,color:#fff
+    style SimpleGemini fill:#9C27B0,stroke:#6A1B9A,stroke-width:2px,color:#fff
+    style DeepGemini fill:#9C27B0,stroke:#6A1B9A,stroke-width:2px,color:#fff
+    style Shared fill:#607D8B,stroke:#37474F,stroke-width:2px,color:#fff
+```
+
+**技能调用规则（G11 强制执行）**：
+- 📝 **plan.md 生成** → 必须使用 **plan-down**（禁止主模型直接写）
+- 🔍 **代码质量检查** → 必须使用 **codex-code-reviewer**（双轮验证）
+- 📄 **标准文档生成** → 必须使用 **simple-gemini**
+- 🔬 **深度分析文档** → 必须使用 **deep-gemini**
+- 🧪 **测试代码生成** → **simple-gemini** → **codex** → 主模型运行
+
+**参数契约**（详见 `skills/shared/tool_parameter_contract.md`）：
+- 585 行完整文档
+- 覆盖 9 个 Zen MCP 工具
+- 包含常见错误和修复建议
 
 ---
 
