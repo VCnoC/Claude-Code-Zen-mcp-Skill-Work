@@ -7,6 +7,59 @@
 
   ---
 
+  ## 📚 共享概念速查(SSOT)
+
+  > 以下概念在整个规则体系中只此一处定义,所有技能文档必须引用而非重复。
+
+  ### automation_mode (自动化模式)
+
+  **核心理念：全自动模式 = 零等待原则（Zero-Wait Principle）**
+
+  automation_mode=true 的本质含义：
+  - 用户说"全程自动化" = 用户已将**所有决策权**委托给 AI
+  - 除阻塞性错误（环境缺失、依赖错误、安全风险）外，**禁止在任何节点等待用户确认**
+  - "零等待"不是建议，是**强制约束** - 违反此原则 = 违背用户授权意图
+
+  **记忆锚点**：
+  - automation_mode=true → 像执行 shell 脚本一样自动运行到底
+  - 技能返回 = 脚本执行到下一行，不是暂停点
+  - 询问用户 = 违反原则（除非阻塞性错误）
+
+  **技术规范**：
+  - **谁设**: 仅 main-router 在任务开始时判断并设置
+  - **触发关键词**: "全程自动化" / "自动化流程" / "全自动" / "自动化模式"
+  - **取值**: `true`(全自动) / `false`(交互,默认)
+  - **传递**: `[AUTOMATION_MODE: true]` (通过上下文)
+  - **下游约束**: 只读取,不重新判断;true 时禁止询问用户"是否继续?"
+  - **例外情况**: 阻塞性错误（环境缺失、依赖错误、权限问题）、安全风险（敏感信息暴露、生产环境操作）
+
+  ### coverage_target (测试覆盖率目标)
+  - **谁设**: 仅 main-router 在 P1/P2 阶段询问用户并设置
+  - **默认**: 85% (工业标准) / **最低**: 70%
+  - **传递**: `[COVERAGE_TARGET: 85%]` (通过上下文)
+  - **下游约束**: 只读取,不询问用户;验证时使用该值作为标准
+  - **行为规范**: 见 [G9 测试覆盖率目标设定] (包含 < 70% 强制报错等逻辑)
+
+  ### auto_log (自动化决策日志)
+  - **触发**: 仅当 automation_mode=true 时生成
+  - **三层架构**:
+    - **Layer 1 核心模板** (约200行): `skills/shared/auto_log_template.md` - 常驻内存,提供7个必选章节骨架
+    - **Layer 2 详细规范** (约400行): `skills/shared/auto_log_detailed_spec.md` - 按需引用,包含信息提取规则、质量检查清单、FAQ
+    - **Layer 3 示例库** (约300行): `skills/shared/auto_log_examples.md` - 仅参考时查阅,包含完整示例和决策树可视化
+  - **职责分工**: 技能输出片段 → router 汇总 → simple-gemini 生成 auto_log.md
+  - **文件性质**: 运行时审计日志,不纳入版本控制
+  - **Layer选择标准**（自动判断）:
+    - **仅Layer 1**：简单任务（耗时<30分钟 且 阶段≤3 且 无P4触发）
+    - **Layer 1+2**：复杂任务（耗时≥30分钟 或 含P4阶段 或 质量问题≥5个）
+    - **Layer 1+2+3**：需要参考示例时（首次生成 或 复杂决策树可视化需求）
+
+  ### 复杂操作规范(独立文档)
+  以下规范因操作步骤复杂,抽取为独立文件:
+  - **G10 环境自适应 CLI 调用**: 见 `references/standards/cli_env_g10.md`
+  - **P4 最终质量验证**: 见 `references/standards/p4_final_validation.md`
+
+  ---
+
   ## 核心工作流（优先执行）
 
   **智能技能路由优先原则：**
@@ -25,14 +78,36 @@
   - `deep-gemini` - 深度技术分析文档（含复杂度分析）
   - `plan-down` - 智能规划与任务分解 **[plan.md 生成强制使用]**
 
+  **职责分配（Responsibility Matrix）：**
+
+  | 角色 | 职责 | 执行时机 | 调用方式 |
+  |------|------|----------|----------|
+  | **主模型**<br/>(Claude Code 主会话) | - 接收用户请求<br/>- 调用 main-router skill（任务开始时）<br/>- 调用其他技能（根据需要）<br/>- **执行自动恢复检查**（技能返回后）<br/>- 创建和更新 TodoList<br/>- 输出结果给用户 | 整个任务生命周期 | - |
+  | **main-router skill** | - 意图识别<br/>- 阶段匹配<br/>- 设置 automation_mode<br/>- 选择最佳技能 | 任务开始时（一次性） | 主模型调用 → 返回建议 |
+  | **plan-down skill** | - 方法清晰度判断<br/>- 任务分解<br/>- 生成 plan.md | 需要规划时（一次性） | 主模型调用 → 返回 plan.md |
+  | **codex skill** | - 代码质量检查<br/>- 5 维度验证 | 代码完成后（一次性或多次） | 主模型调用 → 返回检查报告 |
+  | **simple-gemini skill** | - 文档生成<br/>- 测试生成 | 需要文档/测试时（多次） | 主模型调用 → 返回文档/测试代码 |
+
+  **关键点**：
+  - 所有 skill 都是**一次性调用**，执行完**返回给主模型**
+  - **主模型**负责整个流程的控制和自动恢复
+  - main-router 负责初始路由和全程监控，在关键节点主动调用专用技能（遵循 G11 Anti-Lazy 原则）
+
+  **职责分工（符合 G11）**：
+  - **main-router**：初始路由 + 全程监控 + 强制调用技能（Anti-Lazy 原则）
+  - **主模型**：执行任务 + 技能返回后自动恢复 + 遵循 router 监控指令
+  - **技能（skills）**：一次性调用，返回给主模型，不持续运行
+
   **工作流程（含自动化模式状态管理）：**
   ```
   用户请求
     ↓
+  主模型调用 main-router skill
+    ↓
   main-router 读取标准文件 (CLAUDE.md)
     ↓
   CRITICAL:判断并设置 automation_mode 状态标志
-    - 检测关键词："全程自动化""自动化流程""全自动"
+    - 检测关键词："全程自动化" / "自动化流程" / "全自动" / "自动化模式"
     - 设置全局状态: automation_mode = true/false
     - 该状态在整个任务生命周期中保持不变
     ↓
@@ -40,15 +115,18 @@
     ↓
   选择最佳技能/工具 (或直接执行)
     ↓
-  执行任务 ← main-router 持续监控
+  main-router 返回建议给主模型
+    ↓
+  主模型执行任务 ← main-router 持续监控（Anti-Lazy），主模型负责自动恢复
     - 所有下游技能从上下文中读取 automation_mode
     - 禁止下游技能重新判断自动化模式
+    - 技能返回后立即执行自动恢复检查
     ↓
-  关键节点自动调用技能：
-  - 代码完成 → codex 检查（继承 automation_mode）
-  - 需要测试 → simple-gemini → codex 验证（继承 automation_mode）
-  - 需要规划 → plan-down（继承 automation_mode）
-  - 需要文档 → simple-gemini/deep-gemini（继承 automation_mode）
+  关键节点 main-router 强制调用技能（主模型执行）：
+  - 代码完成 → 调用 codex skill（继承 automation_mode）
+  - 需要测试 → 调用 simple-gemini skill → codex 验证（继承 automation_mode）
+  - 需要规划 → 调用 plan-down skill（继承 automation_mode）
+  - 需要文档 → 调用 simple-gemini/deep-gemini skill（继承 automation_mode）
   ```
 
   **强制技能使用规则（绝不偷懒）：**
@@ -57,141 +135,37 @@
   - **测试生成工作流**：simple-gemini 生成 → codex 验证 → 主模型运行
   - **文档生成必须用专用技能**：不允许主模型直接生成正式文档
 
-  **自动化模式状态管理（三层架构 - 唯一真相源）：**
+  **技能返回后的自动恢复（Skill Return Auto-Resume）**
 
-  **第 1 层：Router 层（全局真相源 - ONLY SOURCE）**
+  **执行主体：主模型** | **⚠️ CRITICAL - 技能返回立即执行，不可跳过**
 
-  - **职责**：main-router 在接收用户**初始请求**时判断并设置 `automation_mode`
-  - **触发条件检测**：
-    - 检测关键词："全程自动化" / "自动化流程" / "全自动" / "自动化模式"
-    - 检测意图：用户是否要求"全程无需确认" / "自动执行所有步骤"
-  - **状态设置**：
-    ```
-    automation_mode = true   # 全自动化模式
-    automation_mode = false  # 交互模式（默认）
-    ```
-  - **状态生命周期**：
-    - 仅在任务开始时设置一次
-    - 整个任务生命周期中保持不变
-    - 仅在新的用户初始请求时重新判断
-  - **CRITICAL**：只有 main-router 有权判断和设置 automation_mode，其他组件只能读取
+  **【强制检查清单】** - 技能（plan-down, codex, simple-gemini等）返回后逐项执行：
 
-  **第 2 层：传递层（状态继承机制）**
+  □ **Step 1**: 读取状态 - `[AUTOMATION_MODE: true/false]` + TodoList（pending/in_progress 数量）
+  □ **Step 2**: 确认阶段 - P1/P2/P3/P4 + 刚才调用的技能
+  □ **Step 3**: 判断推进
+     - **阶段跃迁**：
+       - P1完成 → 调用plan-down（P2）
+       - P2完成 → 检查P3前置 → 满足则进P3
+     - **阶段内推进**：
+       - P3进行中 → 下一个pending任务
+       - P4完成 → 回归闸门
+  □ **Step 4**: 执行决策
+     - automation_mode=true → **立即推进**（禁止询问）
+     - automation_mode=false → 输出建议，等待确认
 
-  - **传递规则**：
-    - main-router 调用任何下游技能时，自动传递 `automation_mode` 状态
-    - 通过上下文（prompt/参数）明确告知下游技能当前模式
-    - 示例传递格式：`[AUTOMATION_MODE: true]` 或 `[AUTOMATION_MODE: false]`
-
-  **第 3 层：Skill 层（只读取，不判断 - READ ONLY）**
-
-  - **绝对禁止**：
-    -下游技能自己判断是否是自动化模式
-    -下游技能检查用户初始请求中的关键词
-    -下游技能询问用户"是否继续"（如果 automation_mode=true）
-    -下游技能修改 automation_mode 状态
-  - **强制要求**：
-    -所有技能只从上下文中读取 `automation_mode` 状态
-    -根据状态调整行为：
-      - `automation_mode=true`：自动决策，不询问用户
-      - `automation_mode=false`：交互式决策，可以询问用户
-    -所有自动决策必须记录理由和依据
-
-  **人机交互策略统一标准：**
-
-  **交互模式（automation_mode=false，默认）：**
-
-  -可以询问用户确认："是否继续？" / "请选择..." / "是否需要...？"
-  -在关键决策点等待用户反馈
-  -用户未回应时保持等待，不做超时降级
-
-  **全自动化模式（automation_mode=true）：**
-
-  - **主模型和所有下游技能拥有完全决策权**，自动选择阶段、技能、参数
-  -所有"是否继续？"类问题自动回答"是"
-  -所有选择题自动选择最佳选项（基于标准和上下文）
-  - **严格禁止询问用户**："是否继续？" / "是否需要...？" / "请选择..."
-  - **透明性要求**：所有自动决策必须记录理由、置信度和标准依据，使用 `[全自动模式]` 标签标识
-  - **例外情况（仅此情况可询问用户）**：
-    - 遇到阻塞性错误（环境缺失、依赖错误、权限问题）
-    - 检测到数据安全风险（敏感信息暴露、生产环境操作）
-
-  ** CRITICAL - 阶段自动推进（Stage Auto-Progression）：**
-
-  在 automation_mode=true 时，系统必须像"流水线"一样自动推进，不得在阶段之间停顿等待用户确认：
-
-  - **P1 完成后 → 自动进入 P2**：
-    -分析完成，无阻塞问题 → 立即调用 plan-down 生成 plan.md
-    -**绝对禁止**："P1 分析完成，是否进入 P2？"（违反自动化原则）
-    - **正确行为**："[全自动模式] P1 分析完成，自动进入 P2 阶段。调用 plan-down skill..."
-
-  - **P2 完成后 → 自动进入 P3**：
-    -plan.md 生成完成 → 自动检查 P3 前置条件
-    -满足条件（低风险 + 影响范围明晰） → 立即进入 P3 执行方案
-    -不满足条件 → 记录原因，停止并生成报告（例外情况）
-    -**绝对禁止**："plan.md 已生成，是否开始执行？"
-
-  - **P3 执行过程中 → 自动完成所有子任务**：
-    -代码生成 → 自动调用 codex 检查 → 自动修复问题 → 继续下一步
-    -测试生成 → simple-gemini 生成 → codex 验证 → 主模型运行测试
-    -文档更新 → simple-gemini 更新 PROJECTWIKI.md + CHANGELOG.md
-    -**绝对禁止**：在任何子任务之间询问"是否继续？"
-
-  - **TodoList 自动推进（Todo Auto-Progression）**：
-    -完成一个 todo 后，**立即标记为 completed**，并**自动开始下一个 pending todo**
-    -使用 TodoWrite 更新状态：completed → in_progress（下一个）
-    -**绝对禁止**：完成一个 todo 后停下来等待用户
-    - 示例流程：
-      ```
-      ☑ P1: 快速分析贪吃蛇游戏需求 (completed)
-      → [全自动模式] 自动开始下一项
-      ☐ P2: 调用 plan-down 生成 plan.md（强制使用） → (in_progress)
-      → plan-down 执行中...
-      → plan.md 生成完成
-      → [全自动模式] 标记为 completed，自动开始下一项
-      ☐ P3: 执行方案... → (in_progress)
-      ```
-
-  - **流水线执行示例**：
-    ```
-    用户："全程自动化，开发贪吃蛇游戏"
-    ↓
-    [设置 automation_mode=true]
-    ↓
-    [P1 开始] 分析需求...
-    → 需求分析完成    → [无需确认，自动推进]
-    ↓
-    [P2 开始] 调用 plan-down skill...
-    → plan.md 生成完成    → 检查 P3 前置条件: 通过    → [无需确认，自动推进]
-    ↓
-    [P3 开始] 创建项目骨架...
-    → 骨架完成  → 自动调用 codex 检查    → 实现游戏逻辑...
-    → 逻辑完成  → 自动调用 codex 检查    → 生成测试代码 (simple-gemini)    → 测试代码验证 (codex)    → 运行测试    → 更新文档 (simple-gemini)    → [无需确认，自动推进]
-    ↓
-    [任务完成] 生成 auto_log.md    ```
-
-  **自动决策示例对比：**
-
+  **输出格式**：
   ```
-  错误（违反统一策略）：
-  "由于当前是全自动化模式，我将自动进入 P2 阶段并调用 plan-down 生成详细方案。
-   是否继续？（全自动模式下默认继续，如需调整技术栈请告知）"
-  ↑ 问题：在 automation_mode=true 时仍然询问用户
-
-  正确（遵循统一策略）：
-  "[全自动模式] 检测到需要制定方案，自动进入 P2 阶段。
-   调用 plan-down skill 生成详细方案...
-   （决策依据：automation_mode=true，用户初始请求包含'全程自动化'，当前阶段为 P1 → P2）"
-  ↑ 正确：不询问用户，直接执行并记录决策依据
+  [全自动模式] 技能返回后自动推进
+  ✅ 状态：automation_mode=true
+  ✅ 阶段：P2完成 → P3前置条件通过
+  ✅ 任务：检测到18个待执行任务
+  → 自动进入P3阶段，开始执行...
   ```
 
-  **重要提醒：**
-  - **main-router 是唯一真相源**：只有 router 判断并设置 automation_mode，其他组件只读取
-  - **优先使用 main-router**：除非用户明确指定某个技能，否则应先通过 main-router 进行路由
-  - **标准驱动决策**：main-router 必须先读取 CLAUDE.md 再做决策
-  - **阶段感知路由**：根据 P1-P4 阶段要求选择合适的技能支持
-  - **全程主动监控**：main-router 不是"一次性路由器"，而是"全程监控者"
-  - **状态一致性**：所有下游技能的 automation_mode 必须与 router 设置的保持一致
+  **❌ 禁止**：技能返回后结束对话 / 询问"是否继续" / 跳过检查 / 视为任务终点
+
+  **关键认知**：技能返回给主模型（非main-router）→ 主模型负责自动恢复 → 遵循零等待原则
 
   ---
 
@@ -388,250 +362,30 @@
 
   **G9｜测试覆盖率目标设定（三层架构 - 统一标准）**
 
-  **核心原则：** 复用 automation_mode 的成功模式，建立覆盖率目标的三层架构管理机制，确保 Router、simple-gemini、codex-code-reviewer 使用统一的标准。
+  coverage_target 的定义与约束见上方「📚 共享概念速查」一节。
 
-  **第 1 层：Router 层（唯一设置源 - ONLY SOURCE）**
+  **Router 层职责**：
+  - 在 P1/P2 阶段询问用户（或使用默认 85%）
+  - 询问话术："关于测试覆盖率目标，请问您期望达到多少？建议 85%，最低 70%。"
+  - 记录到 plan.md 的"验收标准"章节
 
-  - **职责**：main-router 在任务开始时（P1 分析问题阶段或 P2 制定方案阶段）询问用户并设置 `coverage_target`
-  - **询问方式**：
-    ```
-    关于测试覆盖率目标，请问您期望达到多少？
-    - 建议：85%（推荐的工业标准）
-    - 最低：70%（基本质量保证）
-    - 严格：90%+（高质量要求）
-
-    如果不确定，将使用默认值 85%。
-    ```
-  - **默认值规则**：
-    - 如果用户明确指定（如 "90%"）→ 使用用户值
-    - 如果用户未指定 → 使用默认值 **85%**
-    - 最低可接受阈值：**70%**（低于此值触发警告）
-  - **状态设置**：
-    ```
-    coverage_target = 85%   # 默认值（用户未指定时）
-    coverage_target = 90%   # 用户指定值
-    coverage_minimum = 70%  # 最低可接受阈值（固定）
-    ```
-  - **状态生命周期**：
-    - 仅在任务开始时设置一次（P1 或 P2 阶段）
-    - 整个任务生命周期中保持不变
-    - 仅在新的用户初始请求时重新询问
-  - **记录要求**：
-    - 将目标值记录在 plan.md 的"验收标准"章节
-    - 记录在 auto_log.md（如果是自动化模式）
-  - **CRITICAL**：只有 main-router 有权询问和设置 coverage_target，其他组件只能读取
-
-  **第 2 层：传递层（状态继承机制）**
-
-  - **传递规则**：
-    - main-router 调用 simple-gemini、codex-code-reviewer 等技能时，自动传递 `coverage_target` 状态
-    - 通过上下文（prompt/参数）明确告知下游技能当前目标值
-    - 示例传递格式：`[COVERAGE_TARGET: 85%]` 或 `[COVERAGE_TARGET: 90%]`
-  - **传递时机**：
-    - 调用 simple-gemini 生成测试代码时 → 传递目标值
-    - 调用 codex-code-reviewer 验证代码质量时 → 传递目标值
-    - 调用其他涉及测试的技能时 → 传递目标值
-
-  **第 3 层：Skill 层（只读取，不判断 - READ ONLY）**
-
-  - **绝对禁止**：
-    -下游技能自己询问用户期望的覆盖率
-    -下游技能使用硬编码的覆盖率阈值（如固定 70% 或 85%）
-    -下游技能修改 Router 设置的 coverage_target 值
-  - **强制要求**：
-    -所有技能只从上下文中读取 `coverage_target` 状态
-    -根据读取的目标值进行测试生成和验证：
-      - simple-gemini：生成测试时确保覆盖率 ≥ coverage_target
-      - codex-code-reviewer：验收时使用 coverage_target 作为标准
-      - 如果实际覆盖率 < coverage_target：触发补测流程
-      - 如果实际覆盖率 < 70%（最低阈值）：强制报错
-    -所有决策必须记录依据（引用 Router 设置的目标值）
-
-  **执行标准与一致性保障**
-
-  - **生成测试代码**（simple-gemini）：
-    - 读取 `[COVERAGE_TARGET: X%]`
-    - 生成测试用例时瞄准目标值
-    - 生成后标注预期覆盖率
-  - **验证代码质量**（codex-code-reviewer）：
-    - 读取 `[COVERAGE_TARGET: X%]`
-    - 验收标准：实际覆盖率 ≥ X%
-    - 如果 < X% 且 ≥ 70%：警告并建议补测
-    - 如果 < 70%：拒绝通过，要求补充测试
-  - **主模型执行测试**：
-    - 运行测试并获取覆盖率报告
-    - 对比实际覆盖率与 coverage_target
-    - 如果未达标：返回 simple-gemini 补充测试用例
-
-  **覆盖率检查与报告**
-
-  - **检查工具**：
-    - 使用 codex-code-reviewer 或项目测试工具验证实际覆盖率
-    - 自动化模式下：如果 < coverage_target，自动触发补测（最多 2 轮）
-    - 交互模式下：如果 < coverage_target，询问用户是否补测
-  - **报告要求**：
-    - 覆盖率报告应包含：语句覆盖率、分支覆盖率、函数覆盖率
-    - 报告中标注 Router 设置的目标值和实际达成值
-    - 如果未达标，说明差距和建议
-
-  **示例工作流**
-
-  **交互模式 (automation_mode=false)**：
-  ```
-  [P1/P2 阶段]
-  Router: "关于测试覆盖率目标，请问您期望达到多少？（建议 85%，最低 70%）"
-  User: "90%"
-  Router: 设置 coverage_target = 90%，记录到 plan.md
-
-  [P3 阶段 - 测试生成]
-  Router → simple-gemini: "生成测试代码 [COVERAGE_TARGET: 90%]"
-  simple-gemini: 生成测试，目标覆盖率 90%
-
-  [P3 阶段 - 质量验证]
-  Router → codex-code-reviewer: "验证代码质量 [COVERAGE_TARGET: 90%]"
-  codex: 实际覆盖率 87% < 90% → 警告："覆盖率未达标，建议补充测试"
-  Router: 询问用户是否补测
-  ```
-
-  **自动化模式 (automation_mode=true)**：
-  ```
-  [P1/P2 阶段]
-  Router: 用户未指定 → 自动设置 coverage_target = 85%（默认）
-  Router: 记录决策到 auto_log.md
-
-  [P3 阶段 - 测试生成]
-  Router → simple-gemini: "生成测试代码 [COVERAGE_TARGET: 85%]"
-  simple-gemini: 生成测试，目标覆盖率 85%
-
-  [P3 阶段 - 质量验证]
-  Router → codex-code-reviewer: "验证代码质量 [COVERAGE_TARGET: 85%]"
-  codex: 实际覆盖率 82% < 85% → 自动决策："触发补测（第 1 轮）"
-  Router → simple-gemini: "补充测试用例 [COVERAGE_TARGET: 85%]"
-  codex: 实际覆盖率 86% ≥ 85% → 通过  ```
-
-  **重要提醒**：
-  - **Router 是唯一真相源**：只有 Router 询问用户并设置 coverage_target，其他组件只读取
-  - **统一标准**：85% 默认，70% 最低，所有技能必须使用 Router 设置的值
-  - **状态一致性**：coverage_target 在整个任务生命周期中保持一致，类似 automation_mode
-  - **向后兼容**：如果旧版本技能不支持读取 coverage_target，暂时允许使用默认 85%，但需记录警告
+  **Skill 层职责**：
+  - **simple-gemini**：生成测试时确保覆盖率 ≥ coverage_target
+  - **codex-code-reviewer**：验收时使用 coverage_target 作为标准
+  - 实际覆盖率 < 70% 时**强制报错**
 
   **G10｜环境自适应 CLI 调用（Environment-Adaptive CLI Invocation）**
 
-  **核心原则：在使用任何 CLI 工具（codex, gemini）前，必须先检测操作系统环境，根据环境选择正确的调用方式。**
+  **何时使用**：当需要调用 codex / gemini CLI 工具时（代码审查、文档生成、consensus 等场景）。
 
-  **环境检测方法：**
+  **核心原则**：在使用任何 CLI 工具前，必须先检测操作系统环境，根据环境选择正确的调用方式。
 
-  使用以下命令检测当前操作系统环境：
+  **强制要求（CRITICAL）**：
+  - 必须先用 `mcp__zen__clink` 启动 CLI 会话，再调用 `mcp__zen__consensus` 等依赖 CLI 的工具
+  - 正确顺序：clink (启动 CLI) → consensus (使用 CLI)
+  - 违反此顺序会导致 401 API 错误
 
-  ```bash
-  # 检测方法 1：查看 uname
-  uname -a
-
-  # 检测方法 2：检查 WSL 环境变量
-  echo $WSL_DISTRO_NAME
-
-  # 检测方法 3：检查平台信息
-  python3 -c "import platform; print(platform.system())"
-  ```
-
-  **环境判定规则：**
-
-  1. **WSL 环境**：
-     - 判定条件：`uname -a` 包含 "microsoft" 或 "WSL"
-     - 或：`$WSL_DISTRO_NAME` 非空
-     - CLI 调用方式：直接在 WSL 终端使用 `codex` 或 `gemini` 命令
-
-  2. **Windows 环境**：
-     - 判定条件：`platform.system()` 返回 "Windows"
-     - CLI 调用方式：通过 PowerShell 使用 `codex` 或 `gemini` 命令
-     - 命令格式：`powershell -Command "codex"` 或 `pwsh -Command "codex"`
-
-  3. **macOS 环境**：
-     - 判定条件：`uname -s` 返回 "Darwin"
-     - 或：`platform.system()` 返回 "Darwin"
-     - CLI 调用方式：直接在终端使用 `codex` 或 `gemini` 命令
-
-  4. **Linux 环境**：
-     - 判定条件：`uname -s` 返回 "Linux" 且不包含 "microsoft"
-     - CLI 调用方式：直接在终端使用 `codex` 或 `gemini` 命令
-
-  **CLI 工具调用标准流程（强制执行）：**
-
-  ```
-  STEP 1: 环境检测
-  → 执行检测命令确定操作系统类型
-
-  STEP 2: 选择调用方式
-  → WSL/Linux/macOS: 直接使用 CLI 命令
-  → Windows: 通过 PowerShell 调用
-
-  STEP 3: ⚠️ MANDATORY - 使用 mcp__zen__clink 启动 CLI
-  → 工具: mcp__zen__clink
-  → 参数: prompt="codex" 或 "gemini", cli_name="codex" 或 "gemini"
-  → 结果: 创建运行中的 CLI 会话
-  → 根据环境自动调整调用方式
-
-  STEP 4: 使用依赖 CLI 的工具（如 mcp__zen__consensus）
-  → 这些工具将使用 STEP 3 创建的 CLI 会话
-  → 不能跳过 STEP 3 直接调用这些工具
-  ```
-
-  **严格执行顺序（针对 codex/gemini + consensus 工作流）：**
-
-  ```
-  CORRECT:
-  1. mcp__zen__clink (启动 CLI) → 创建 CLI 会话
-  2. mcp__zen__consensus (使用 CLI) → 使用已创建的会话
-
-  WRONG:
-  直接调用 mcp__zen__consensus with "codex" model
-  → 导致 401 API 错误
-  → 原因: consensus 无法直接调用 codex API，必须通过 CLI 会话
-  ```
-
-  **示例实现：**
-
-  ```yaml
-  # 所有环境通用 - 启动 codex CLI
-  Tool: mcp__zen__clink
-  Parameters:
-    prompt: "codex"          # 启动 codex CLI (MCP 已内置 --skip-git-repo-check)
-    cli_name: "codex"
-    # 注意：无需指定 working_directory，clink 不支持此参数
-  ```
-
-  ** CRITICAL - Codex CLI 启动说明与参数规范：**
-
-  - **MCP 已内置 `--skip-git-repo-check` 参数**，无需手动传递
-  - **正确调用示例**: `prompt: "codex"` + `cli_name: "codex"`（仅这两个必填参数）
-
-  **clink 工具参数合同（仅支持以下字段）：**
-  - **支持的参数（完整列表）**：
-    - `prompt` - 必填，非空字符串
-    - `cli_name` - 必填，CLI 名称（"codex" / "gemini" / "claude"）
-    - `role` - 可选，角色预设（"default" / "codereviewer" / "planner"）
-    - `files` - 可选，文件路径列表
-    - `images` - 可选，图像路径列表
-    - `continuation_id` - 可选，会话延续 ID
-  - **不支持的参数（会被拒绝）**：
-    - `args` - 已内置参数，不可手动传递
-    - `working_directory` - 不支持，CLI 会在当前目录运行
-    - 任何其他未列出的字段
-
-  **重要说明：**
-
-  - `mcp__zen__clink` 工具设计为**跨平台兼容**，会自动适配不同操作系统
-  - 在 WSL 环境中，CLI 工具（codex, gemini）应该已经安装在 WSL 的 PATH 中
-  - 在 Windows 环境中，CLI 工具应该可以通过 PowerShell 访问
-  - 在 macOS/Linux 环境中，CLI 工具应该在系统 PATH 中
-  - **首次使用前应确认 CLI 工具已正确安装并可访问**
-  - **关键**: 某些 MCP 工具（如 `mcp__zen__consensus`）在使用 codex/gemini 模型时，**必须先通过 clink 启动 CLI**，不能直接调用 API
-
-  **环境检测失败处理：**
-
-  - 如果环境检测失败，默认假设为 Linux 环境
-  - 如果 CLI 启动失败，应向用户报告错误并提供安装指南
-  - 建议在任务开始时进行一次性环境检测，结果可缓存用于后续使用
+  **详细操作规范**：见 `references/standards/cli_env_g10.md`
 
   **G11｜智能技能路由与主动任务监控（Main Router Skills - 全程监控，绝不偷懒）**
 
@@ -694,14 +448,14 @@
   4. **反面案例（严格禁止 - FORBIDDEN）：**
 
      ```
-     ❌ 错误示例 1：偷懒跳过 plan-down
+     错误示例 1：偷懒跳过 plan-down
      主模型直接写 plan.md → 缺少多模型验证
 
-     ❌ 错误示例 2：跳过代码质量检查
+     错误示例 2：跳过代码质量检查
      主模型生成代码 → 主模型自我审查 → 完成
      （应该：主模型生成 → codex 检查 → 完成）
 
-     ❌ 错误示例 3：测试代码未经验证
+     错误示例 3：测试代码未经验证
      主模型生成测试 → 直接运行
      （应该：simple-gemini 生成 → codex 验证 → 主模型运行）
      ```
@@ -713,134 +467,10 @@
      - **P3（执行方案）**：代码完成后强制使用 codex，文档使用 simple-gemini/deep-gemini
      - **P4（错误处理）**：修复后再次使用 codex 验证
 
-  6. **全自动化模式下的监控（遵循 router 设置的 automation_mode）：**
-
-     **核心原则：从上下文中读取 automation_mode，不重新判断触发条件**
-
-     - **状态读取（READ ONLY）**：
-       -从 router 传递的上下文中读取 `automation_mode` 状态
-       -**禁止重新检测**：不得检查用户初始请求中的关键词
-       -**禁止修改状态**：不得修改 router 设置的 automation_mode
-
-     - **基于状态的行为调整**：
-       - **当 automation_mode=true 时**：
-         -main-router 和主模型拥有完全决策权
-         -自动选择阶段（P1→P2→P3）
-         -自动调用技能（plan-down, codex, gemini 等）
-         -自动选择参数（模型、技术栈、配置等）
-         -**禁止询问用户**："是否继续？""是否需要...？"等问题
-       - **当 automation_mode=false 时**：
-         -在关键决策点询问用户确认
-         -等待用户反馈后再继续
-
-     - **正确行为模式**：
-       ```
-       ✅ CORRECT（遵循 router 状态）:
-       # 从上下文读取: [AUTOMATION_MODE: true]
-       "[全自动模式] 检测到需要规划，自动进入 P2 阶段。
-        调用 plan-down skill...
-        （决策依据：automation_mode=true 由 router 设置）"
-
-       ❌ WRONG（重新判断触发条件）:
-       # 自己检查用户请求中的关键词 ← 违反三层架构
-       "检测到用户请求包含'全程自动化'，我将进入 P2 阶段。
-        是否继续？"
-       ```
-
-     - **透明性要求**：
-       - 所有技能调用决策需记录理由、置信度和标准依据
-       - 使用 `[全自动模式]` 标签标识自动决策（仅当 automation_mode=true 时）
-       - main-router 必须先读取全局和项目级的 CLAUDE.md，确保所有路由决策符合当前阶段要求和全局规则（G1-G11）
-
-     - **例外情况（仅此情况可询问用户，即使 automation_mode=true）**：
-       - 遇到阻塞性错误（环境缺失、依赖错误、权限问题）
-       - 检测到数据安全风险（敏感信息暴露、生产环境操作）
-
-     - **任务完成后的日志生成（MANDATORY，仅当 automation_mode=true 时）**：
-       - 在全自动化任务完成后，**必须使用 simple-gemini** 生成完整决策日志
-       - 日志文件名：`auto_log.md`（项目根目录）
-       - **日志生成机制**：
-         - 各技能在自动模式下会在自己的输出中提供 `[自动决策记录]` 段落
-         - main-router 会在任务结束时汇总这些记录
-         - 最终通过 simple-gemini 生成统一的 `auto_log.md` 文件
-         - **职责分工**：技能只输出片段内容，文件写入由 router 统一完成
-       - 日志内容要求：
-         - 完整的决策过程（时间线）
-         - 每个阶段的选择理由和标准依据
-         - 调用的技能/工具列表及参数
-         - 自动决策的置信度和风险评估
-         - 遇到的问题和解决方案
-         - 最终结果和输出文件清单
-         - **automation_mode 状态变化记录**：记录 router 何时设置了 automation_mode=true
-       - 日志格式：结构化 Markdown，包含时间戳、决策树、执行摘要
-       - 目的：让用户完全了解全自动模式下发生的所有操作
-       - **文件性质与定位**：
-         - **类型**：运行时审计日志（Runtime Audit Log）
-         - **生命周期**：任务执行期间生成，任务结束后保留供用户审查
-         - **版本控制**：不纳入版本库（已在 .gitignore 中排除）
-         - **与 PROJECTWIKI.md 的区别**：
-           - `PROJECTWIKI.md`：项目知识库，长期维护，版本控制，作为唯一可信文档源（Single Source of Truth）
-           - `auto_log.md`：一次性任务审计日志，记录自动化决策过程，不作为正式知识库的一部分
-         - **用途**：供用户事后审查自动化模式下的所有决策和操作，确保透明性和可追溯性
-
-  7. **全自动化模式下的修复类技能（遵循 automation_mode 状态）：**
-
-     **核心原则：** 当从上下文读取到 `automation_mode=true` 时，修复类技能（如 codex-code-reviewer）应**自动选择并执行修复建议**，无需再次征询用户批准。
-
-     **自动决策规则（仅当 automation_mode=true 时适用）：**
-
-     - **状态检查**：首先从上下文读取 automation_mode 状态
-       -如果 automation_mode=true → 应用以下自动决策规则
-       -如果 automation_mode=false → 询问用户是否需要修复
-
-     - **自动修复决策（automation_mode=true）**：
-       - **Critical/High 级别问题**：强制自动修复（安全漏洞、系统崩溃风险、数据丢失等）
-       - **Medium 级别问题**：
-         - 如果修复安全且不影响业务逻辑 → 自动修复
-         - 如果可能影响业务逻辑或需要理解业务 → 跳过并记录原因
-       - **Low 级别问题**：
-         - 代码风格、命名规范、注释等 → 自动修复
-         - 其他低优先级问题 → 根据影响范围决定
-
-     **透明性要求：**
-
-     - 所有自动修复决策必须记录详细理由
-     - 跳过的问题必须说明原因（例如："可能影响业务逻辑，需要人工判断"）
-     - 提供完整的修复日志，包括：
-       - 已修复问题列表（含严重级别和修复方法）
-       - 已跳过问题列表（含跳过原因）
-       - 决策依据和风险评估
-
-     **示例工作流：**
-
-     ```
-     用户初始请求："全程自动化，开发用户注册功能"
-     ↓
-     main-router 判断并设置: automation_mode = true
-     ↓
-     Phase 1: plan-down（继承 automation_mode=true）→ 生成 plan.md     Phase 2: 主模型生成代码
-     Phase 3: codex-code-reviewer（从上下文读取 automation_mode=true）
-       → 读取状态: [AUTOMATION_MODE: true]
-       → 发现 4 个问题
-       → 自动决策（基于 automation_mode=true）：
-         - SQL注入 (critical) → ✅ 自动修复
-         - 缺少异常处理 (medium) → ✅ 自动修复
-         - 变量命名 (low) → ✅ 自动修复
-         - 业务逻辑优化 (medium) → ⏭️ 跳过（需要理解业务）
-       → 自动应用 3 个修复
-       → 记录 1 个跳过项（记录决策依据: automation_mode=true）
-     Phase 4: 主模型继续执行后续任务
-     ```
-
-     **适用技能：**
-     - `codex-code-reviewer` - 代码质量修复
-     - 其他提供修复建议的分析类技能
-
-     **重要提醒：**
-     - **状态来源唯一**：automation_mode 仅由 router 在任务开始时设置，下游技能只读取不判断
-     - **禁止重复检测**：修复类技能不得检查用户初始请求中的关键词，只能从上下文读取 automation_mode
-     - **智能决策**：修复类技能必须基于**安全性和影响范围**进行智能决策，不是盲目修复所有问题
-     - **完全透明**：所有自动决策必须保持完全透明，记录 automation_mode 状态和决策依据
+  6. **全自动化模式下的监控**：
+     - automation_mode 定义见「📚 共享概念速查」，遵循**零等待原则**
+     - 所有技能必须从上下文读取 automation_mode，**禁止**重新判断或修改
+     - 例外：阻塞性错误、安全风险时可询问用户（详见共享概念速查）
 
   ---
   
@@ -855,7 +485,7 @@
   ```mermaid
   flowchart LR
     A[用户输入] --> B[意图识别层]
-    B --> C{执行指���?}
+    B --> C{执行指令?}
     B --> D{咨询求助?}
     B --> E{模糊意图?}
 
@@ -931,7 +561,7 @@
   ### 展示规则
   
   - **Direct Answer**：直接答复，不展示阶段标签。
-  - **进入任一阶段**：在回复开头展示**固定文字和阶段标签**等文字提示（示例：“HelloAGENTS - 【P1｜分析问题】：”），其余内容按该阶段规则要求的格式输出。
+  - **进入任一阶段**：在回复开头展示**固定文字和阶段标签**等文字提示（示例：“HelloClaude - 【P1｜分析问题】：”），其余内容按该阶段规则要求的格式输出。
   - **阶段切换**：发生切换时，在首行追加一次性提示（例：“HelloAGENTS - 【阶段切换：P1 → P2】”），便于审计追溯。
   - **唯一性**：展示规则在此统一规定，各阶段内不再重复描述。
 
@@ -1183,16 +813,26 @@
   7. **对外同步**：在对外发布的公告或提交说明中，提供复盘链接与修复验证摘要。
   
   ### 输出
-  
+
   - 已应用并验证通过的修复代码版本。
   - 更新后的 `PROJECTWIKI.md`（包含缺陷复盘）。
   - 问题影响范围与预防措施清单。
   - `CHANGELOG.md` 中记录的修复变更摘要。
-  
-  ### 阶段转换
-  
-  - 问题已彻底解决 → 流程结束。
-  - 问题仍未解决 → 视情况选择回到 **P1** 重新分析，或留在 **P4** 重复上述步骤。
+
+  ### 回归闸门（质量验证）
+
+  **何时进入**：P4 修复代码完成后，**强制进入**回归闸门进行质量验证（质量闸门）。
+
+  **核心原则**：P4 修复完成后，必须通过强制质量验证流程才能结束任务。
+
+  **强制验证流程（3 步骤）**：
+  1. codex 双轮验证（codereview 工作流 + clink CLI 深度分析）
+  2. 文档联动验证（PROJECTWIKI.md 缺陷复盘 + CHANGELOG.md Fixed 分区 + 双向链接）
+  3. 回归测试验证（原始场景 + 关键路径 + 性能回归）
+
+  **CRITICAL**：禁止跳过回归闸门 / 仅单轮验证 / 修复代码但不更新文档
+
+  **详细验证规范**：见 `references/standards/p4_final_validation.md`
 
   ### 绝对禁止
 

@@ -23,18 +23,17 @@
 
 ### 覆盖率目标 (G9 合规)
 
-- **默认目标**: 85% 语句覆盖率
-- **最低阈值**: 70% 语句覆盖率
-- **推荐目标**: 90%+ 对于核心业务逻辑
+> **数值定义以 CLAUDE.md「📚 共享概念速查 → coverage_target」为准**，本文件仅提供执行指引。
+> - 默认目标 / 最低阈值：见 CLAUDE.md
+> - 推荐目标：90%+ 对于核心业务逻辑（项目自定义）
 
 ### 覆盖率读取机制
 
 ```markdown
 测试代码生成时，必须从上下文读取 `[COVERAGE_TARGET: X%]`：
-- 由 main-router 在任务开始时设置
+- 由 main-router 在任务开始时设置（见 CLAUDE.md「G9」）
 - simple-gemini / codex-code-reviewer 只读取不判断
-- 默认值：85%（用户未指定时）
-- 最低值：70%（低于此值触发警告）
+- 具体数值（默认值/最低值）以 CLAUDE.md 为准
 ```
 
 ### 覆盖率类型
@@ -481,7 +480,7 @@ test_<function>_<scenario>_<expected_result>
 
 ### 示例
 
-**✅ 好的命名**:
+** 好的命名**:
 ```python
 def test_create_user_with_valid_data_returns_user_object():
     pass
@@ -493,7 +492,7 @@ def test_get_user_by_id_with_nonexistent_id_returns_none():
     pass
 ```
 
-**❌ 不好的命名**:
+** 不好的命名**:
 ```python
 def test_user():  # 太模糊
     pass
@@ -508,7 +507,7 @@ def test_1():  # 完全无意义
 ### JavaScript / TypeScript 命名
 
 ```javascript
-// ✅ 好的命名
+//  好的命名
 describe('UserService', () => {
   describe('createUser', () => {
     it('should create user successfully with valid data', () => {});
@@ -517,7 +516,7 @@ describe('UserService', () => {
   });
 });
 
-// ❌ 不好的命名
+//  不好的命名
 describe('Tests', () => {
   it('works', () => {});  // 太模糊
   it('test1', () => {});  // 无意义
@@ -838,10 +837,10 @@ def test_concurrent_user_creation():
 
 ## 常见反模式
 
-### ❌ 反模式 1: 测试依赖顺序
+### 反模式 1: 测试依赖顺序
 
 ```python
-# ❌ 不好：测试依赖执行顺序
+#  不好：测试依赖执行顺序
 class TestBadOrder:
     def test_01_create_user(self):
         self.user_id = create_user()
@@ -849,7 +848,7 @@ class TestBadOrder:
     def test_02_update_user(self):
         update_user(self.user_id)  # 依赖上一个测试
 
-# ✅ 好：每个测试独立
+#  好：每个测试独立
 class TestGoodOrder:
     @pytest.fixture
     def user_id(self):
@@ -864,10 +863,10 @@ class TestGoodOrder:
         assert result is True
 ```
 
-### ❌ 反模式 2: 过度 Mock
+### 反模式 2: 过度 Mock
 
 ```python
-# ❌ 不好：Mock 了所有依赖
+#  不好：Mock 了所有依赖
 def test_too_much_mocking():
     mock_db = Mock()
     mock_cache = Mock()
@@ -876,7 +875,7 @@ def test_too_much_mocking():
     mock_emailer = Mock()
     # ... 过度 Mock，测试变得毫无意义
 
-# ✅ 好：只 Mock 外部依赖
+#  好：只 Mock 外部依赖
 def test_appropriate_mocking():
     # 只 Mock 真正的外部依赖（数据库、API 等）
     with patch('src.services.external_api.ExternalAPI') as mock_api:
@@ -885,16 +884,16 @@ def test_appropriate_mocking():
         assert result is not None
 ```
 
-### ❌ 反模式 3: 测试实现细节
+### 反模式 3: 测试实现细节
 
 ```python
-# ❌ 不好：测试私有方法
+#  不好：测试私有方法
 def test_private_method():
     service = UserService()
     result = service._validate_email("test@example.com")  # 测试私有方法
     assert result is True
 
-# ✅ 好：测试公共接口
+#  好：测试公共接口
 def test_public_interface():
     service = UserService()
     user = service.create_user({
@@ -905,15 +904,15 @@ def test_public_interface():
     assert user.email == "test@example.com"  # 通过公共方法验证
 ```
 
-### ❌ 反模式 4: 忽略边界条件
+### 反模式 4: 忽略边界条件
 
 ```python
-# ❌ 不好：只测试正常路径
+#  不好：只测试正常路径
 def test_only_happy_path():
     result = divide(10, 2)
     assert result == 5
 
-# ✅ 好：测试边界条件
+#  好：测试边界条件
 def test_with_boundary_conditions():
     assert divide(10, 2) == 5  # 正常情况
     assert divide(0, 5) == 0   # 零除数

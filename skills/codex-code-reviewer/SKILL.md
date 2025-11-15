@@ -1,6 +1,6 @@
 ---
 name: codex-code-reviewer
-description: Systematic code review workflow using zen mcp's codex tool. Use this skill when the user explicitly requests "使用codex对代码进行检查", "检查刚刚生成的代码是否存在问题", or "每次生成完一次代码就要进行检查". The skill performs iterative review cycles - checking code quality, presenting issues to the user for approval, applying fixes, and re-checking until no issues remain or maximum iterations (5) are reached.
+description: Systematic code review workflow using zen mcp's codex tool. Use this skill when the user explicitly requests "use codex to check the code", "check if the recently generated code has any issues", or "check the code after each generation". The skill performs iterative review cycles - checking code quality, presenting issues to the user for approval, applying fixes, and re-checking until no issues remain or maximum iterations (5) are reached.
 ---
 
 # Codex Code Reviewer
@@ -11,14 +11,14 @@ This skill provides a systematic, iterative code review workflow powered by zen 
 
 **Operation Modes:**
 - **Interactive Mode (Default)**: Present issues to user, wait for approval before applying fixes
-- **Full Automation Mode**: Automatically select and apply all suggested fixes without user approval (activated when user initially requests "全程自动化" or "full automation")
+- **Full Automation Mode**: Automatically select and apply all suggested fixes without user approval (activated when user initially requests "full automation" or "complete automation")
 
 ## When to Use This Skill
 
 Trigger this skill when the user says:
-- "使用codex对代码进行检查"
-- "请你帮我检查刚刚生成的代码是否存在问题"
-- "每次生成完一次代码就要进行检查"
+- "Use codex to check the code"
+- "Please help me check if the recently generated code has any issues"
+- "Check the code after each generation"
 - Similar requests for code quality validation using codex
 
 ## Workflow: Iterative Code Review Cycle
@@ -27,14 +27,13 @@ Trigger this skill when the user says:
 
 Before starting the review cycle:
 
-1. **🚨 Read Operation Mode from Context (Three-Layer Architecture):**
-   - **MUST** read `automation_mode` from the context passed by main-router
-   - **Context Format**: `[AUTOMATION_MODE: true]` or `[AUTOMATION_MODE: false]`
-   - **READ ONLY**: This skill MUST NOT detect/judge automation mode itself
-   - **Behavior**:
-     - If `automation_mode = true`: Enable **Full Automation Mode** (auto-apply fixes based on severity)
-     - If `automation_mode = false`: Use **Interactive Mode** (require user approval)
-   - **❌ FORBIDDEN**: Do NOT check user's initial request for keywords like "全程自动化"
+1. ** Read Operation Mode from Context (automation_mode - READ FROM SSOT):**
+   - automation_mode definition and constraints: See CLAUDE.md「📚 共享概念速查」
+   - **This skill's role**: Skill Layer (read-only), read from context `[AUTOMATION_MODE: true/false]`, true → auto-fix / false → ask user
+
+1a. **Read Coverage Target from Context (coverage_target - READ FROM SSOT):**
+   - coverage_target definition and constraints: See CLAUDE.md「📚 共享概念速查」
+   - **This skill's role**: Skill Layer (read-only), read from context `[COVERAGE_TARGET: X%]`, validate coverage (≥ target pass, < 70% reject)
 
 2. **Identify Files to Review:**
    - Use `git status` or similar to identify recently modified files
@@ -45,7 +44,7 @@ Before starting the review cycle:
 4. Set maximum iterations: `max_iterations = 5`
 5. Initialize review tool tracker: `first_review_done = false`
 6. **Detect Review Context:**
-   - Check if this is **final quality validation** (项目结束/最终验证)
+   - Check if this is **final quality validation** (project completion/final verification)
    - If YES: Enable **Final Validation Mode** (requires minimum 2 passes: codereview + clink)
    - If NO: Use **Standard Review Mode**
 
@@ -84,41 +83,21 @@ Parameters:
 - confidence: Start with "exploring", increase as understanding grows
 ```
 
-**Important**:
-- Always use **absolute full paths** for `relevant_files`
-- Follow zen mcp's codereview workflow (typically 2-3 steps for external validation)
-- Reference `references/code_quality_standards.md` for quality criteria
+**Important**: Use absolute full paths; follow zen mcp's codereview workflow (2-3 steps); reference `references/quality_standards/README.md` (on-demand loading)
 
 **B) Second and Subsequent Reviews: Call `mcp__zen__clink` with codex CLI**
 
 ```
 Tool: mcp__zen__clink
 Parameters:
-- prompt: |
-    请对以下文件进行代码审查，检查代码质量、安全性、性能和架构设计：
-
-    [列出文件路径及其上下文]
-
-    审查维度：
-    1. 代码质量：可读性、可维护性、复杂度
-    2. 安全性：漏洞、敏感信息处理
-    3. 性能：效率、资源使用
-    4. 架构：设计模式、模块化
-    5. 文档：注释完整性
-
-    请按严重程度（critical/high/medium/low）分类问题，
-    并提供具体的文件位置、行号和修复建议。
+- prompt: "Review files for: 1) Code quality 2) Security 3) Performance 4) Architecture 5) Documentation. Categorize by severity (critical/high/medium/low), provide file:line locations and fix recommendations."
 - cli_name: "codex"
 - role: "code_reviewer"
-- files: [list of recently modified file paths - MUST be absolute full paths]
-- continuation_id: [optional, for context continuity across reviews]
+- files: [absolute full paths]
+- continuation_id: [optional, for context continuity]
 ```
 
-**Important**:
-- Always use **absolute full paths** for `files`
-- Use `continuation_id` to maintain context across multiple clink review iterations
-- clink directly interacts with codex CLI for detailed code analysis
-- Supported parameters: `prompt` (required), `cli_name`, `role`, `files`, `images`, `continuation_id`
+**Important**: Use absolute full paths for `files`; use `continuation_id` for context continuity; supported params: prompt, cli_name, role, files, images, continuation_id
 
 #### Step 2: Present Findings and Decision Making
 
@@ -129,69 +108,12 @@ After codex returns the review results:
    - Provide specific file locations and line numbers
    - Explain the impact of each issue
 
-2. **🚨 First: Read automation_mode from Context**
+2. **Decision Making Based on automation_mode (READ FROM CONTEXT):**
 
-   ```
-   IF [AUTOMATION_MODE: false] → Interactive Mode (see A below)
-   IF [AUTOMATION_MODE: true] → Automated Mode (see B below)
-   ```
-
-   **Decision Making Based on Mode:**
-
-   **A) Interactive Mode (automation_mode = false):**
-   ```
-   发现 X 个问题需要修复：
-
-   [严重] 文件A:行B - 问题描述
-   [中等] 文件C:行D - 问题描述
-   ...
-
-   是否批准修复这些问题？
-   - 是：继续修复
-   - 否：终止审查
-   - 部分：请指定要修复的问题
-   ```
-   **Wait for User Response** - Do NOT proceed without explicit approval
-
-   **B) Full Automation Mode (automation_mode = true):**
-   ```
-   [全自动模式] 发现 X 个问题，自动选择修复策略：
-
-   [严重] 文件A:行B - 问题描述 → ✅ 自动修复
-   [中等] 文件C:行D - 问题描述 → ✅ 自动修复
-   ...
-
-   决策依据：
-   - 所有 critical/high 级别问题：强制修复
-   - medium 级别问题：如果修复安全且不影响业务逻辑 → 修复
-   - low 级别问题：如果是代码风格问题 → 修复
-
-   立即执行修复...
-   ```
-   **Automatic Decision** - No user approval needed, proceed directly to Step 3
-
-3. **Automation Mode Decision Logic:**
-   ```python
-   if automation_mode:
-       for issue in issues_found:
-           if issue.severity in ["critical", "high"]:
-               # Always fix critical and high severity issues
-               apply_fix(issue)
-           elif issue.severity == "medium":
-               # Fix if safe and doesn't change business logic
-               if is_safe_fix(issue) and not affects_business_logic(issue):
-                   apply_fix(issue)
-           elif issue.severity == "low":
-               # Fix if it's a style/formatting issue
-               if is_style_issue(issue):
-                   apply_fix(issue)
-
-       # IMPORTANT: This skill does NOT directly write to auto_log.md
-       # Instead, it outputs [自动决策记录] sections (like the example above)
-       # main-router will collect these sections at task completion and
-       # use simple-gemini to generate the unified auto_log.md file
-       # See CLAUDE.md for the complete auto_log mechanism
-   ```
+   - automation_mode behavior and decision logic: See CLAUDE.md「📚 共享概念速查」and「G11 Automated Repair Skills」
+   - `[AUTOMATION_MODE: false]` → Interactive: Ask user approval
+   - `[AUTOMATION_MODE: true]` → Automated: Auto-fix Critical/High, conditional Medium, auto-fix Low style issues
+   - Output `[Automated Decision Record]` fragments for auto_log.md (collected by router, generated by simple-gemini)
 
 #### Step 3: Apply Fixes
 
@@ -203,21 +125,14 @@ After codex returns the review results:
 3. Follow project coding standards from CLAUDE.md
 4. Document changes made
 
-**Automation Mode Transparency (Log to auto_log.md):**
-- Log all applied fixes with rationale, confidence, and standards met
-- Log skipped fixes with reasons (e.g., "affects business logic", "unclear impact")
-- All automated decisions MUST be recorded in `auto_log.md`
-- Example log format:
+**Automation Mode Transparency:**
+- auto_log mechanism and format: See CLAUDE.md「📚 共享概念速查 → auto_log」and `skills/shared/auto_log_template.md`
+- Example output:
   ```
-  [自动修复记录]
-  ✅ 已修复：3 个严重问题，2 个中等问题，1 个代码风格问题
-  ⏭️ 已跳过：1 个中等问题（可能影响业务逻辑）
-
-  详细决策：
-  1. security-issue-001 (critical) → 修复 (SQL注入风险)
-  2. performance-issue-002 (medium) → 修复 (N+1查询，安全修复)
-  3. style-issue-003 (low) → 修复 (变量命名不规范)
-  4. logic-change-004 (medium) → 跳过 (需要理解业务逻辑才能修复)
+  [Automated Fix Record]
+   Fixed: 3 critical, 2 medium, 1 low | Skipped: 1 medium (business logic)
+   1. SQL injection (critical) → Fixed | 2. N+1 query (medium) → Fixed
+   3. Variable naming (low) → Fixed | 4. Logic optimization (medium) → Skipped
   ```
 
 #### Step 4: Increment and Validate
@@ -234,7 +149,7 @@ Check termination conditions:
 - **User cancellation**: User declined fixes → Exit loop
 - **Continue**: Issues remain and iterations < max_iterations → Go to Step 1
 
-**Final Validation Mode (项目结束/最终验证):**
+**Final Validation Mode (Project Completion/Final Verification):**
 - **Minimum Pass Requirement**: MUST complete at least 2 passes
   - Pass 1: mcp__zen__codereview (first_review_done = true)
   - Pass 2: mcp__zen__clink with codex CLI
@@ -250,25 +165,25 @@ Check termination conditions:
 When the cycle terminates, provide a final report:
 
 ```
-代码审查完成报告：
+Code Review Completion Report:
 
-审查轮次：X / 5
-审查文件：[列出文件]
+Review rounds: X / 5
+Reviewed files: [list files]
 
-使用工具：
-- 第 1 轮：mcp__zen__codereview (codex workflow validation)
-- 第 2 轮：mcp__zen__clink (codex CLI direct analysis)
-- 第 3+ 轮：mcp__zen__clink (continued)
+Tools used:
+- Round 1: mcp__zen__codereview (codex workflow validation)
+- Round 2: mcp__zen__clink (codex CLI direct analysis)
+- Round 3+: mcp__zen__clink (continued)
 
-最终状态：
-- ✅ 所有问题已修复 / ⚠️ 达到最大审查次数 / ❌ 用户取消
-- [Final Validation Mode] ✅ 已完成最少 2 轮验证 / ⚠️ 未满足最少 2 轮要求
+Final status:
+- All issues fixed / Max reviews reached / User cancelled
+- [Final Validation Mode] Completed minimum 2 passes / Did not meet minimum 2 pass requirement
 
-修复摘要：
-- 已修复问题：X 个
-- 剩余问题：Y 个（如果有）
+Fix summary:
+- Fixed issues: X
+- Remaining issues: Y (if any)
 
-建议：[下一步建议]
+Recommendations: [next steps]
 ```
 
 ## Code Quality Standards
@@ -284,7 +199,10 @@ Key quality dimensions checked:
 4. **Architecture**: Adherence to documented design decisions
 5. **Documentation**: Code comments, PROJECTWIKI.md alignment
 
-See `references/code_quality_standards.md` for detailed criteria.
+**Test Coverage Standards (G9 Compliance):**
+- coverage_target usage and thresholds: See CLAUDE.md「📚 共享概念速查」
+
+See `references/quality_standards/README.md` for on-demand quality standards (load specific files as needed).
 
 ## Best Practices
 
@@ -303,244 +221,120 @@ See `references/code_quality_standards.md` for detailed criteria.
 
 ## Resources
 
-### references/code_quality_standards.md
+### references/quality_standards/README.md
 
-Detailed quality standards extracted from CLAUDE.md. Load this reference when:
+Quality standards index and on-demand loading guide. Load this reference when:
+- Need overview of available quality standards
 - Detailed quality criteria are needed
-- User questions specific standards
-- Ambiguous quality issues require clarification
 
-Use grep patterns to search: `G1|G2|核心原则|伦理|可复现`
+Then load specific standard files as needed:
+- `global_rules.md` - G1-G8 全局规则
+- `core_principles.md` - 核心开发原则
+- `p3_constraints_and_quality.md` - P3执行约束
+- `commit_and_quality_gates.md` - Conventional Commits规范
+- `error_handling_and_usage.md` - P4错误处理
+
+Use grep patterns to search: `G1|G2|core principles|ethics|reproducible`
 
 ## Example Usage
 
 ### Example 1: Interactive Mode (Default)
 
-**User**: "使用codex对代码进行检查"
+**User**: "Use codex to check the code"
 
-**Assistant**:
-```
-好的，我将使用 codex 对最近修改的代码进行系统审查。
-
-首先，让我识别最近修改的文件...
-[运行 git status]
-
-发现以下文件有修改：
-- src/features.py
-- src/model_training.py
-
-读取上下文: [AUTOMATION_MODE: false]
-模式：交互式审查（需要用户批准修复）
-
-开始第 1 轮审查...
-[调用 mcp__zen__codereview]
-
-审查结果：
-发现 3 个问题：
-[严重] src/features.py:45 - 潜在的空指针引用
-[中等] src/model_training.py:120 - 缺少异常处理
-[低] src/features.py:30 - 变量命名不符合规范
-
-是否批准修复这些问题？
-```
-
-**User**: "是"
-
-**Assistant**:
-```
-开始修复问题...
-[应用修复]
-
-修复完成。开始第 2 轮审查...
-[调用 mcp__zen__clink with codex CLI]
-
-审查结果：✅ 未发现新问题
-
-代码审查完成！
-审查轮次：2 / 5
-使用工具：
-- 第 1 轮：mcp__zen__codereview
-- 第 2 轮：mcp__zen__clink (codex CLI)
-所有问题已成功修复。
-```
+**Workflow**:
+1. Identify files: src/features.py, src/model_training.py
+2. Read context: `[AUTOMATION_MODE: false]` → Interactive mode
+3. Round 1 (`mcp__zen__codereview`): Found 3 issues (1 critical, 1 medium, 1 low)
+4. Ask user approval → User: "Yes"
+5. Apply fixes
+6. Round 2 (`mcp__zen__clink`): No new issues
+7. **Result**: All issues fixed in 2/5 rounds
 
 ---
 
 ### Example 2: Full Automation Mode ⭐
 
-**User Initial Request**: "全程自动化，帮我开发登录功能，代码完成后自动检查质量"
+**User Initial Request**: "Full automation, help me develop login functionality, automatically check quality after code completion"
 
-**Main Router**: Detects "全程自动化" → Sets automation_mode = true
+**Main Router**: Detects "full automation" → Sets automation_mode = true
 
 **After code generation, Main Claude invokes codex-code-reviewer with automation_mode = true:**
 
 **Assistant**:
 ```
-好的，我将使用 codex 对刚生成的代码进行系统审查。
+Alright, I will use codex to systematically review the just-generated code.
 
-首先，让我识别最近修改的文件...
-[运行 git status]
+First, let me identify recently modified files...
+[Running git status]
 
-发现以下文件有修改：
+Found the following modified files:
 - src/auth/login.py
 - src/auth/session.py
 - tests/test_login.py
 
-读取上下文: [AUTOMATION_MODE: true]
-模式：全自动审查（自动选择并应用修复）
+Reading context: [AUTOMATION_MODE: true]
+Mode: Full automation review (automatically select and apply fixes)
 
-开始第 1 轮审查...
-[调用 mcp__zen__codereview]
+Starting round 1 review...
+[Calling mcp__zen__codereview]
 
-审查结果：
-发现 5 个问题：
-[严重] src/auth/login.py:45 - SQL注入风险 (critical)
-[严重] src/auth/session.py:23 - 明文存储密码 (critical)
-[中等] src/auth/login.py:78 - 缺少异常处理 (medium)
-[中等] src/auth/session.py:56 - 性能问题：N+1查询 (medium)
-[低] tests/test_login.py:12 - 测试命名不规范 (low)
+Review results:
+Found 5 issues:
+[Critical] src/auth/login.py:45 - SQL injection risk (critical)
+[Critical] src/auth/session.py:23 - Plaintext password storage (critical)
+[Medium] src/auth/login.py:78 - Missing exception handling (medium)
+[Medium] src/auth/session.py:56 - Performance issue: N+1 query (medium)
+[Low] tests/test_login.py:12 - Non-standard test naming (low)
 
-[全自动模式] 自动选择修复策略：
+[Full Automation Mode] Auto-decision + fixes applied:
 
-决策分析：
-✅ SQL注入风险 (critical) → 自动修复（安全问题强制修复）
-✅ 明文存储密码 (critical) → 自动修复（安全问题强制修复）
-✅ 缺少异常处理 (medium) → 自动修复（标准异常处理，不影响业务逻辑）
-✅ N+1查询问题 (medium) → 自动修复（使用 select_related，安全优化）
-✅ 测试命名不规范 (low) → 自动修复（代码风格问题）
+[Automated Fix Record] Fixed: 2 critical, 2 medium, 1 low
+1. SQL injection (critical) → Fixed with parameterized queries
+2. Plaintext password (critical) → Fixed with bcrypt encryption
+3. Exception handling (medium) → Fixed with try-except blocks
+4. N+1 query (medium) → Fixed with select_related optimization
+5. Test naming (low) → Fixed by renaming to standard convention
 
-立即执行修复...
-[自动应用所有修复]
+Fixes completed. Starting round 2 review...
+[Calling mcp__zen__clink with codex CLI]
 
-[自动修复记录]
-✅ 已修复：2 个严重问题，2 个中等问题，1 个代码风格问题
+Review results: No new issues found
 
-详细修复：
-1. SQL注入风险 → 使用参数化查询替换字符串拼接
-2. 明文密码 → 使用 bcrypt 加密存储
-3. 异常处理 → 添加 try-except 块和错误日志
-4. N+1查询 → 使用 select_related('user') 优化查询
-5. 测试命名 → 重命名为 test_login_with_valid_credentials
-
-修复完成。开始第 2 轮审查...
-[调用 mcp__zen__clink with codex CLI]
-
-审查结果：✅ 未发现新问题
-
-代码审查完成！
-审查轮次：2 / 5
-使用工具：
-- 第 1 轮：mcp__zen__codereview
-- 第 2 轮：mcp__zen__clink (codex CLI)
-全自动模式：自动修复 5 个问题，跳过 0 个问题
-所有问题已成功修复，无需用户干预。
+Code review complete!
+Review rounds: 2 / 5
+Tools used:
+- Round 1: mcp__zen__codereview
+- Round 2: mcp__zen__clink (codex CLI)
+Full automation mode: Auto-fixed 5 issues, skipped 0 issues
+All issues successfully fixed without user intervention.
 ```
 
-**Key Differences in Full Automation Mode:**
-- ✅ No user approval step - proceeds directly to fixing
-- ✅ Automatic decision logic based on severity and safety
-- ✅ Transparent logging of all auto-decisions
-- ✅ Rationale provided for each fix/skip decision
-- ✅ Maintains same quality standards as interactive mode
+**Key Differences:** No user approval, auto-decision by severity/safety, transparent logging with rationale, same quality standards
 
 ---
 
-### Example 3: Final Validation Mode (项目结束/最终质量验证) ⭐⭐
+### Example 3: Final Validation Mode (Project Completion/Final Quality Verification) ⭐⭐
 
-**User**: "项目已完成,请进行最终质量验证"
+**User**: "Project is complete, please perform final quality verification"
 
-**Assistant**:
-```
-好的,我将进行最终质量验证。
+**Workflow**:
+1. Detect: Project completion/final verification → Enable Final Validation Mode (min 2 rounds)
+2. Identify files: 5 core files (src + tests)
+3. Round 1 (`mcp__zen__codereview`): Found 2 issues (1 medium, 1 low)
+4. Ask user approval → User: "Yes" → Apply fixes
+5. Round 2 (`mcp__zen__clink` with codex CLI): No new issues
+6. **Result**: All issues fixed, minimum 2-round requirement met, quality verification passed
 
-读取上下文: [AUTOMATION_MODE: false] (默认交互模式)
-检测到：项目结束/最终验证阶段
-启用：Final Validation Mode（最少 2 轮验证）
-
-首先，让我识别项目文件...
-[运行 git status 或分析项目结构]
-
-发现以下核心文件：
-- src/features.py
-- src/model_training.py
-- src/utils.py
-- tests/test_features.py
-- tests/test_model.py
-
-开始第 1 轮审查（使用 mcp__zen__codereview）...
-[调用 mcp__zen__codereview]
-
-审查结果：
-发现 2 个问题：
-[中等] src/utils.py:67 - 缺少输入验证
-[低] tests/test_features.py:23 - 测试覆盖率不足
-
-是否批准修复这些问题？
-```
-
-**User**: "是"
-
-**Assistant**:
-```
-开始修复问题...
-[应用修复]
-
-修复完成。开始第 2 轮审查（使用 mcp__zen__clink with codex CLI）...
-[调用 mcp__zen__clink]
-Parameters:
-- prompt: "请对以下文件进行深度代码审查..."
-- cli_name: "codex"
-- role: "code_reviewer"
-- files: [所有核心文件的绝对路径]
-
-审查结果：✅ 未发现新问题
-
-代码审查完成！
-审查轮次：2 / 5
-
-使用工具：
-- 第 1 轮：mcp__zen__codereview (codex workflow validation)
-- 第 2 轮：mcp__zen__clink (codex CLI direct analysis)
-
-最终状态：
-- ✅ 所有问题已修复
-- ✅ 已完成最少 2 轮验证要求
-
-修复摘要：
-- 已修复问题：2 个
-- 剩余问题：0 个
-
-质量验证通过！项目已达到发布标准。
-```
-
-**Key Features in Final Validation Mode:**
-- ✅ **Mandatory minimum 2 passes**: Cannot exit before completing both codereview and clink checks
-- ✅ **Dual-tool verification**: First pass uses codereview workflow, second pass uses codex CLI directly
-- ✅ **Early exit prevention**: Even if first pass finds no issues, must proceed to second pass
-- ✅ **Comprehensive coverage**: Ensures thorough quality validation before project completion
+**Key Features:** Mandatory 2+ passes (codereview + clink), early exit prevention, comprehensive validation before release
 
 ---
 
 ## Notes
 
-- This skill uses **dual-tool approach** for comprehensive code review:
-  - **First review (iteration 1)**: `mcp__zen__codereview` for workflow-based validation
-  - **Subsequent reviews (iteration 2+)**: `mcp__zen__clink` with codex CLI for direct analysis
-- Maximum 5 iterations prevents infinite loops while allowing thorough review
-- **Interactive Mode (Default)**: Always prioritize user consent before applying code changes
-- **Full Automation Mode**: Auto-apply fixes based on severity and safety analysis, with full transparency
-- **Final Validation Mode**: Enforces minimum 2 passes (codereview + clink) for project completion
-- Maintains compatibility with CLAUDE.md workflow (P3: 执行方案, P4: 错误处理)
-- **🚨 CRITICAL - automation_mode Management**:
-  - **Three-Layer Architecture**: This skill follows the global automation_mode architecture
-  - **Router (Layer 1)**: Only main-router judges and sets `automation_mode` based on user's initial request
-  - **Transmission (Layer 2)**: Router passes automation_mode to this skill via context `[AUTOMATION_MODE: true/false]`
-  - **Skill (Layer 3 - READ ONLY)**: This skill ONLY reads automation_mode, never judges or modifies it
-  - **❌ FORBIDDEN**: Do NOT ask user "是否需要自动化执行?" or check for automation keywords
-  - **Automated Mode (automation_mode=true)**: All decisions logged via `[自动决策记录]` output sections (see CLAUDE.md for auto_log mechanism)
-- **CRITICAL - auto_log.md Generation Mechanism**:
-  - This skill **DOES NOT** directly write to `auto_log.md` file
-  - In automation_mode=true, outputs `[自动决策记录]` sections with decisions, rationale, confidence, and standards
-  - main-router collects all such sections at task completion and uses simple-gemini to generate unified `auto_log.md`
-  - File location: Project root directory `auto_log.md` (runtime audit log, not version controlled)
-- Final validation mode activated when user mentions "项目结束" / "最终验证" / "最终质量验证"
+- Dual-tool approach: Iteration 1 uses `mcp__zen__codereview`, iteration 2+ uses `mcp__zen__clink` with codex CLI
+- Max 5 iterations, CLAUDE.md workflow compatible (P3/P4), three modes: Interactive (default) / Full Automation / Final Validation (2+ passes)
+- **automation_mode & auto_log (READ FROM SSOT)**:
+  - Definitions and constraints: See CLAUDE.md「📚 共享概念速查」
+  - This skill: Skill Layer (read-only), outputs `[Automated Decision Record]` fragments when automation_mode=true
+- Final validation mode activated when user mentions "project completion" / "final verification" / "final quality validation"

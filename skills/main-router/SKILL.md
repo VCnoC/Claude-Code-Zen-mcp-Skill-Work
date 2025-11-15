@@ -3,7 +3,7 @@ name: main-router
 description: Intelligent skill router that analyzes user requests and automatically dispatches to the most appropriate skill(s) or zen-mcp tools. Routes to zen-chat for Q&A, zen-thinkdeep for deep problem investigation, codex-code-reviewer for code quality, simple-gemini for standard docs/tests, deep-gemini for deep analysis, or plan-down for planning. Use this skill proactively to interpret all user requests and determine the optimal execution path.
 ---
 
-# Main Router - 智能技能路由调度器
+# Main Router - Intelligent Skill Routing Scheduler
 
 ## Overview
 
@@ -34,7 +34,7 @@ Main Router MUST actively monitor the entire task lifecycle and proactively invo
 **Mandatory Workflow Rules:**
 
 1. **Planning Phase:**
-   - When user requests "制定计划" / "生成 plan.md" / "规划任务"
+   - When user requests "make a plan" / "generate plan.md" / "plan tasks"
    - **MUST use plan-down skill** (not Main Claude direct planning)
    - Rationale: plan-down provides multi-model validation and structured decomposition
 
@@ -58,18 +58,18 @@ Main Router MUST actively monitor the entire task lifecycle and proactively invo
 5. **Continuous Monitoring:**
    - Router monitors task progress throughout execution
    - Proactively suggests skill invocations when opportunities arise
-   - Example: "刚完成代码,是否需要我使用 codex 检查质量?"
+   - Example: "Just finished code, should I use codex to check quality?"
 
 **Anti-Pattern - Router Being Lazy (FORBIDDEN):**
 ```
-❌ BAD: Main Claude generates code → Main Claude self-reviews → Done
-✅ GOOD: Main Claude generates code → Router invokes codex-code-reviewer → Done
+ BAD: Main Claude generates code → Main Claude self-reviews → Done
+ GOOD: Main Claude generates code → Router invokes codex-code-reviewer → Done
 
-❌ BAD: Main Claude writes plan.md directly
-✅ GOOD: Router invokes plan-down skill → plan.md generated with validation
+ BAD: Main Claude writes plan.md directly
+ GOOD: Router invokes plan-down skill → plan.md generated with validation
 
-❌ BAD: Main Claude generates tests → Run immediately
-✅ GOOD: Router invokes simple-gemini → codex validates → Main Claude runs
+ BAD: Main Claude generates tests → Run immediately
+ GOOD: Router invokes simple-gemini → codex validates → Main Claude runs
 ```
 
 ## When to Use This Skill
@@ -77,14 +77,14 @@ Main Router MUST actively monitor the entire task lifecycle and proactively invo
 **Use this skill PROACTIVELY for ALL user requests** to determine the best execution path.
 
 **Typical User Requests:**
-- "解释一下什么是..." (→ zen-chat)
-- "深度分析问题..." (→ zen-thinkdeep)
-- "帮我检查代码" (→ codex-code-reviewer)
-- "生成 README 文档" (→ simple-gemini)
-- "深度分析这段代码的性能" (→ deep-gemini)
-- "制定开发计划" (→ plan-down)
-- "写测试文件" (→ simple-gemini)
-- "生成架构分析文档" (→ deep-gemini)
+- "Explain what is..." (→ zen-chat)
+- "Deep analysis of problem..." (→ zen-thinkdeep)
+- "Help me check code" (→ codex-code-reviewer)
+- "Generate README documentation" (→ simple-gemini)
+- "Deep performance analysis of this code" (→ deep-gemini)
+- "Make development plan" (→ plan-down)
+- "Write test files" (→ simple-gemini)
+- "Generate architecture analysis document" (→ deep-gemini)
 - Any task-related request or Q&A
 
 **Router's Decision Process:**
@@ -99,34 +99,15 @@ User Request → Read Standards (CLAUDE.md) → Intent Analysis → Skill Matchi
    - User makes final decisions on skill selection
    - Router provides recommendations with rationale
 
-2. **Full Automation Mode (Three-Layer Architecture - Router as Global Truth Source):**
+2. **Full Automation Mode (automation_mode - READ FROM SSOT):**
 
-   **🚨 CRITICAL - Router's Exclusive Role:**
-   - **ONLY main-router** detects automation triggers in user's initial request
-   - **ONLY main-router** sets `automation_mode = true/false` status
-   - **Main-router MUST pass automation_mode** to all downstream skills via context
-   - **Context Format**: `[AUTOMATION_MODE: true]` or `[AUTOMATION_MODE: false]`
-   - **Downstream skills**: READ ONLY - never detect or modify automation_mode themselves
+   automation_mode definition and constraints: See CLAUDE.md「📚 共享概念速查」
 
-   **Automation Trigger Keywords:**
-   - "全程自动化" / "full automation" / "自动化流程" / "全自动" / "自动化模式"
-
-   **Behavior in Automation Mode:**
-   - Router and Main Claude make all decisions autonomously
-   - **DO NOT ask user for confirmation** ("是否继续？" is FORBIDDEN)
-   - **DO NOT present choices** - auto-select best option based on confidence + standards
-   - **Log all decisions to auto_log.md** with reason, confidence, standards
-   - Only ask user in exceptional cases (blocking errors, security risks, data safety)
-
-   **Decision Logging Template:**
-   ```
-   [自动决策记录]
-   决策：[what was decided]
-   理由：[why this decision was made]
-   置信度：[low/medium/high/very_high]
-   标准依据：[CLAUDE.md G1, P2要求, etc.]
-   已记录到 auto_log.md
-   ```
+   **This skill's role** (Router Layer - Sole Source):
+   - Judge and set automation_mode at task start (detect keywords: "full automation", "automatic process", etc.)
+   - Set status: automation_mode = true/false
+   - Transmit to downstream: `[AUTOMATION_MODE: true/false]`
+   - Monitor throughout lifecycle, enforce mandatory skill invocations (plan-down/codex/simple-gemini)
 
 ## Available Skills Registry
 
@@ -134,10 +115,10 @@ User Request → Read Standards (CLAUDE.md) → Intent Analysis → Skill Matchi
 **Purpose:** General Q&A and collaborative thinking partner
 
 **Triggers:**
-- "解释一下..."
-- "什么是..."
-- "如何理解..."
-- "帮我分析一下..." (non-technical deep analysis)
+- "Explain..."
+- "What is..."
+- "How to understand..."
+- "Help me analyze..." (non-technical deep analysis)
 - General questions, brainstorming, explanations
 
 **Use Cases:**
@@ -161,10 +142,10 @@ User Request → Read Standards (CLAUDE.md) → Intent Analysis → Skill Matchi
 **Purpose:** Multi-stage investigation and reasoning for complex problem analysis
 
 **Triggers:**
-- "深度分析问题..."
-- "调查这个bug的根因..."
-- "系统性分析..." (technical deep dive)
-- "复杂问题分析..."
+- "Deep analysis of problem..."
+- "Investigate root cause of this bug..."
+- "Systematic analysis..." (technical deep dive)
+- "Complex problem analysis..."
 - Architecture decisions, complex bugs, performance challenges
 
 **Use Cases:**
@@ -189,11 +170,11 @@ User Request → Read Standards (CLAUDE.md) → Intent Analysis → Skill Matchi
 **Purpose:** Code quality review with iterative fix-and-recheck cycles
 
 **Triggers:**
-- "使用codex对代码进行检查"
-- "检查刚刚生成的代码是否存在问题"
-- "每次生成完一次代码就要进行检查"
-- "代码审查"
-- "代码质量检查"
+- "Use codex to check code"
+- "Check if the just-generated code has problems"
+- "Check code after every generation"
+- "Code review"
+- "Code quality check"
 
 **Use Cases:**
 - Post-development code quality validation
@@ -215,12 +196,12 @@ User Request → Read Standards (CLAUDE.md) → Intent Analysis → Skill Matchi
 **Purpose:** Standard documentation and test code generation
 
 **Triggers:**
-- "使用gemini来编写测试文件"
-- "使用gemini来编写文档"
-- "生成README"
-- "生成PROJECTWIKI"
-- "生成CHANGELOG"
-- "写测试代码"
+- "Use gemini to write test files"
+- "Use gemini to write documentation"
+- "Generate README"
+- "Generate PROJECTWIKI"
+- "Generate CHANGELOG"
+- "Write test code"
 
 **Use Cases:**
 - Generate standard project documentation (PROJECTWIKI, README, CHANGELOG, ADR)
@@ -242,11 +223,11 @@ User Request → Read Standards (CLAUDE.md) → Intent Analysis → Skill Matchi
 **Purpose:** Deep technical analysis documents with complexity evaluation
 
 **Triggers:**
-- "使用gemini深度分析代码逻辑"
-- "生成架构分析文档"
-- "分析性能瓶颈并生成报告"
-- "深度理解这段代码并生成文档"
-- "生成模型架构分析"
+- "Use gemini for deep code logic analysis"
+- "Generate architecture analysis document"
+- "Analyze performance bottlenecks and generate report"
+- "Deep understanding of this code and generate documentation"
+- "Generate model architecture analysis"
 
 **Use Cases:**
 - Code logic deep dive
@@ -257,16 +238,16 @@ User Request → Read Standards (CLAUDE.md) → Intent Analysis → Skill Matchi
 
 **Key Features:**
 - Two-stage workflow: clink (Gemini CLI analysis) → docgen (dual-phase document generation)
-- **Big O complexity analysis included** (docgen 核心能力)
+- **Big O complexity analysis included** (docgen core capability)
 - Automatic Mermaid diagram generation
 - Evidence-based findings
 - Professional technical writing
 
 **Tools:** `mcp__zen__clink` + `mcp__zen__docgen`
 
-**docgen 工作流程:**
-- Step 1: Exploration (探查项目结构，制定文档计划)
-- Step 2+: Per-File Documentation (生成结构化文档，包含复杂度分析)
+**docgen workflow:**
+- Step 1: Exploration (explore project structure, formulate documentation plan)
+- Step 2+: Per-File Documentation (generate structured docs with complexity analysis)
 
 ---
 
@@ -279,12 +260,12 @@ User Request → Read Standards (CLAUDE.md) → Intent Analysis → Skill Matchi
 - Rationale: Ensures multi-model validation and structured decomposition
 
 **Triggers:**
-- "帮我制定计划"
-- "生成 plan.md"
-- "使用 planner 进行任务规划"
-- "帮我做任务分解"
-- "制定实施方案"
-- "规划项目"
+- "Help me make a plan"
+- "Generate plan.md"
+- "Use planner for task planning"
+- "Help me break down tasks"
+- "Make implementation plan"
+- "Plan the project"
 
 **Use Cases:**
 - Feature development planning
@@ -302,13 +283,10 @@ User Request → Read Standards (CLAUDE.md) → Intent Analysis → Skill Matchi
 
 **Tools:** `mcp__zen__chat` (Phase 0 method clarity judgment) + `mcp__zen__planner` + `mcp__zen__consensus` (conditional - only for Automatic + Unclear path) + `mcp__zen__clink` (when using consensus with codex/gemini)
 
-**Model Support (CRITICAL - Follow G10 Rules):**
-- **For codex/gemini models in consensus**: MUST launch CLI via `mcp__zen__clink` BEFORE calling consensus
-  - Step 1: Use `mcp__zen__clink` to start codex/gemini CLI session
-  - Step 2: Use `mcp__zen__consensus` which will use the established CLI session
-  - Rationale: codex/gemini require CLI session, direct API calls will fail (401 error)
-- **For other models** (gpt-5-pro, claude, etc.): Direct API access via consensus
-- **Best Practice**: If using mixed models (codex + gpt-5-pro), start CLI first for safety
+**Model Support (G10 Compliance - CRITICAL):**
+- **codex/gemini**: MUST use `mcp__zen__clink` to establish CLI session first (otherwise 401 error)
+- **Other models**: Direct API access
+- **Detailed standards**: See `references/standards/cli_env_g10.md`
 
 **Enforcement:**
 ```
@@ -360,7 +338,7 @@ Read the following files to understand project-specific rules and workflows:
 - Only communicate with user if tools fail at runtime
 
 **User-Mentioned MCP Tools are assumed AVAILABLE** - No pre-check required.
-- If user explicitly mentions using specific MCP tools (e.g., "使用 serena 来分析代码", "用 unifuncs 搜索"), those tools are assumed available
+- If user explicitly mentions using specific MCP tools (e.g., "use serena to analyze code", "use unifuncs to search"), those tools are assumed available
 - Router will route optimistically based on user's explicit MCP tool preference
 - Verification happens lazily when those tools are actually invoked
 - Only notify user if the explicitly mentioned tools fail at runtime
@@ -446,12 +424,75 @@ Built-in knowledge of MCP tools available for skill enhancement:
 - If not discovered → Skills proceed with zen-mcp only (no user notification)
 
 **Standards-Based Routing Rules:**
-- If user is in **P1 (分析问题)** phase → May route to zen-thinkdeep for deep analysis
-- If user is in **P2 (制定方案)** phase → May route to plan-down for planning
-- If user is in **P3 (执行方案)** phase → May route to codex-code-reviewer after code changes
-- If user mentions **"全程自动化"** → Enable Full Automation Mode
+- If user is in **P1 (Analyze Problem)** phase → May route to zen-thinkdeep for deep analysis
+- If user is in **P2 (Formulate Solution)** phase → May route to plan-down for planning
+- If user is in **P3 (Execute Solution)** phase → May route to codex-code-reviewer after code changes
+- If user mentions **"full automation"** → Enable Full Automation Mode
 - If standards require documentation → Auto-route to simple-gemini or deep-gemini
 - If standards forbid execution (G3 violation) → Do NOT route to execution-related skills
+
+#### Phase 0.3: Set Coverage Target (G9 Compliance)
+
+coverage_target definition and constraints: See CLAUDE.md「📚 共享概念速查」
+
+**This skill's role** (Router Layer - Sole Setting Source):
+- Ask user in P1/P2 phase (or use default 85%)
+- Inquiry script: "Suggest 85%, minimum 70%. Default 85% if unsure."
+- Transmit to downstream: `[COVERAGE_TARGET: X%]`
+- Record to plan.md (acceptance criteria)
+
+### Fixed Routing Rules (MANDATORY - Auto-Trigger)
+
+These rules MUST be applied automatically at specific workflow points:
+
+**Rule 1: plan.md Generation → plan-down (MANDATORY)**
+- Trigger: User requests "make a plan" / "generate plan.md" / "plan tasks"
+- Action: **MUST** use plan-down skill, **FORBIDDEN** for main model to write plan.md directly
+- Reason: plan-down provides multi-model validation, structured decomposition, standards compliance
+
+**Rule 2: Code Completed → codex-code-reviewer (MANDATORY)**
+- Trigger: Main model completes any code generation or modification
+- Action: **MUST** use codex-code-reviewer for 5-dimension quality check (quality, security, performance, architecture, documentation)
+- Reason: Ensure code quality meets standards
+
+**Rule 3: Test Code Needed → Workflow (MANDATORY)**
+- Trigger: Need to generate test code
+- Action:
+  - Step 1: Use simple-gemini to generate test files (pass `[COVERAGE_TARGET: X%]`)
+  - Step 2: Use codex-code-reviewer to validate test code quality (pass `[COVERAGE_TARGET: X%]`)
+  - Step 3: Main model executes tests
+- Reason: Ensure test code itself is correct and high-quality
+
+**Rule 4: Documentation Needed → Skill-Based (MANDATORY)**
+- Trigger: Need to generate/update documentation
+- Action:
+  - Standard docs (README, PROJECTWIKI, CHANGELOG): Use simple-gemini
+  - Deep analysis docs (architecture, performance): Use deep-gemini
+- Reason: Specialized skills produce higher quality, standards-compliant documents
+
+**Rule 5: P3 Code Changes → Document Linkage (MANDATORY)**
+- Trigger: Code changes in P3 (Execute Solution) phase
+- Action:
+  - Update PROJECTWIKI.md (affected modules/interfaces/flows)
+  - Update CHANGELOG.md (new entry with commit SHA)
+  - Establish bidirectional links (PROJECTWIKI ↔ CHANGELOG)
+- Reason: G1 compliance (documentation first-class citizen)
+
+**Rule 6: P4 Error Fixed → Regression Gate (MANDATORY)**
+- Trigger: P4 (Error Handling) phase completes bug fix
+- Action (3-step validation, cannot skip):
+  - Step 1: Use mcp__zen__codereview for workflow validation
+  - Step 2: Use mcp__zen__clink (codex CLI) for deep code analysis
+  - Step 3: Verify document linkage:
+    - PROJECTWIKI.md updated (design decisions & technical debt section includes defect postmortem)
+    - CHANGELOG.md updated (Fixed section with repair summary)
+    - Bidirectional links established
+- Reason: G8 compliance (mandatory double-pass validation), prevent hasty fixes
+
+**Anti-Lazy Principle:**
+- Main-router MUST actively monitor task lifecycle
+- At each critical node, think: "Should I invoke a skill here?"
+- **ABSOLUTELY FORBIDDEN**: Skip skill invocation to "save effort", letting main model handle tasks that specialized skills should complete
 
 ### Phase 1: Intent Classification
 
@@ -485,31 +526,31 @@ Analyze the user request to identify:
 **Decision Tree:**
 
 ```
-IF user asks general question ("解释", "什么是", "如何理解"):
+IF user asks general question ("explain", "what is", "how to understand"):
     → zen-chat
 
-ELSE IF user requests deep problem analysis ("深度分析问题", "调查bug", "系统性分析"):
+ELSE IF user requests deep problem analysis ("deep problem analysis", "investigate bug", "systematic analysis"):
     → zen-thinkdeep
 
-ELSE IF user mentions "codex" OR "代码检查" OR "代码审查":
+ELSE IF user mentions "codex" OR "code check" OR "code review":
     → codex-code-reviewer
 
-ELSE IF user mentions "gemini" AND ("文档" OR "测试"):
-    IF mentions "深度" OR "分析" OR "架构" OR "性能":
+ELSE IF user mentions "gemini" AND ("documentation" OR "test"):
+    IF mentions "deep" OR "analysis" OR "architecture" OR "performance":
         → deep-gemini
     ELSE:
         → simple-gemini
 
-ELSE IF user mentions "计划" OR "plan" OR "规划":
+ELSE IF user mentions "planning" OR "plan" OR "roadmap":
     → plan-down
 
 ELSE IF intent is "code review":
     → codex-code-reviewer
 
 ELSE IF intent is "document generation":
-    IF document type in [README, PROJECTWIKI, CHANGELOG, 测试]:
+    IF document type in [README, PROJECTWIKI, CHANGELOG, test]:
         → simple-gemini
-    ELSE IF analysis type in [架构, 性能, 代码逻辑]:
+    ELSE IF analysis type in [architecture, performance, code logic]:
         → deep-gemini
 
 ELSE IF intent is "planning":
@@ -562,7 +603,7 @@ User Request → Analyze → Match to Skill X → Invoke Skill X → Return Resu
 
 **Multi-Skill Execution (Sequential):**
 ```
-Example: "生成文档然后检查代码"
+Example: "Generate docs then check code"
 1. Invoke simple-gemini (generate docs)
 2. Wait for completion
 3. Invoke codex-code-reviewer (check code)
@@ -571,7 +612,7 @@ Example: "生成文档然后检查代码"
 
 **Multi-Skill Execution (Parallel - if independent):**
 ```
-Example: "同时生成计划和README"
+Example: "Generate plan and README simultaneously"
 1. Invoke plan-down in parallel
 2. Invoke simple-gemini in parallel
 3. Wait for both to complete
@@ -584,37 +625,37 @@ Example: "同时生成计划和README"
 
 **Option 1: Ask User (Interactive Mode)**
 ```
-检测到您的请求可以使用以下技能：
+Detected that your request can use the following skills:
 
-1. simple-gemini - 生成标准文档
-2. deep-gemini - 生成深度分析文档
+1. simple-gemini - Generate standard documentation
+2. deep-gemini - Generate deep analysis documentation
 
-请选择：
-- 输入 1: 使用 simple-gemini（快速、标准化）
-- 输入 2: 使用 deep-gemini（深入、包含复杂度分析）
+Please choose:
+- Enter 1: Use simple-gemini (fast, standardized)
+- Enter 2: Use deep-gemini (in-depth, includes complexity analysis)
 ```
 
 **Option 2: Auto-Select (Full Automation Mode)**
 
-**CRITICAL: In Full Automation Mode, DO NOT ask user "是否继续？" or present choices**
+**CRITICAL: In Full Automation Mode, DO NOT ask user "continue?" or present choices**
 
-- **Activation**: User explicitly requests "全程自动化"/"full automation"/"自动化流程" in initial request
+- **Activation**: User explicitly requests "full automation"/"complete automation"/"automated process" in initial request
 - **Behavior**: Router and Main Claude make ALL decisions without user intervention
 - **Forbidden Actions**:
-  - ❌ "是否继续？" (是/否)
-  - ❌ "请选择..." (选项 1/2/3)
-  - ❌ "是否需要..." (需要/不需要)
-  - ❌ Any form of asking user for confirmation or choice
+  - "Continue?" (Yes/No)
+  - "Please choose..." (Option 1/2/3)
+  - "Do you need..." (Need/Don't need)
+  - Any form of asking user for confirmation or choice
 - **Correct Actions**:
-  - ✅ "[全自动模式] 检测到需要规划，自动调用 plan-down..."
-  - ✅ "[全自动模式] 代码已生成，自动调用 codex 检查质量..."
-  - ✅ Direct execution with logged rationale
+  - "[Full Auto Mode] Detected planning needed, auto-invoking plan-down..."
+  - "[Full Auto Mode] Code generated, auto-invoking codex for quality check..."
+  - Direct execution with logged rationale
 
 - **Decision Rules**:
   - Uses confidence scores with lower threshold (≥50 instead of ≥60)
   - Prefer simpler skills for ambiguous cases:
-    - simple-gemini over deep-gemini (unless "深度" mentioned)
-    - zen-chat over zen-thinkdeep (unless "调查" or "bug" mentioned)
+    - simple-gemini over deep-gemini (unless "deep" mentioned)
+    - zen-chat over zen-thinkdeep (unless "investigate" or "bug" mentioned)
     - Direct execution over complex skills when unclear
   - **Log all auto-decisions** with rationale for transparency
   - Standards compliance: Always follows CLAUDE.md rules
@@ -625,14 +666,14 @@ Example: "同时生成计划和README"
 
 **Full Automation Mode Decision Template:**
 ```
-[全自动模式 - 自动决策]
-检测到：{task_description}
-自动选择：{selected_tool}
-置信度：{confidence_score}%
-理由：{rationale based on standards and intent}
-标准依据：{relevant CLAUDE.md rules}
+[Full Auto Mode - Auto Decision]
+Detected: {task_description}
+Auto-selected: {selected_tool}
+Confidence: {confidence_score}%
+Rationale: {rationale based on standards and intent}
+Standards basis: {relevant CLAUDE.md rules}
 
-开始执行...
+Starting execution...
 ```
 
 ## Router Workflow: Step-by-Step
@@ -642,10 +683,10 @@ Example: "同时生成计划和README"
 **Main Router's Action:**
 
 ```
-User: "帮我检查刚刚生成的代码"
+User: "Help me check the just-generated code"
 
 Router Internal Analysis:
-- Keywords detected: "检查", "代码"
+- Keywords detected: "check", "code"
 - Intent: Code review
 - Target: Recently generated code
 - Expected output: Quality report + fixes
@@ -659,13 +700,13 @@ Router Internal Analysis:
 ```
 Standards Reading:
 a) Global CLAUDE.md (/home/vc/.claude/CLAUDE.md):
-   - G1: 文档一等公民 - 代码变更必须同步更新文档
-   - G3: 无执行许可场景 - 需要用户明确同意
-   - Current phase: P3 (执行方案) - just completed code generation
+   - G1: Documentation First-Class Citizen - code changes must synchronize doc updates
+   - G3: No Execution Permission Scenario - requires explicit user consent
+   - Current phase: P3 (Execute Solution) - just completed code generation
 
 b) Global CLAUDE.md (/home/vc/.claude/CLAUDE.md):
-   - 代码规范：清晰、可读
-   - 质量门槛：覆盖率 ≥ 70%
+   - Code standards: Clear, readable
+   - Quality threshold: Coverage ≥ 70%
 
 c) Project CLAUDE.md (./CLAUDE.md): [If exists]
    - Project-specific rules
@@ -684,14 +725,14 @@ Standards-Based Decision:
 MCP Assumptions:
 
 zen-mcp:
-  Status: ✅ Assumed AVAILABLE (default)
+  Status:  Assumed AVAILABLE (default)
   Tools: All 13 zen-mcp tools assumed ready
   Strategy: Optimistic routing - verify on actual invocation
 
 User-Mentioned MCPs:
   Detection: Check if user explicitly mentioned MCP tools in request
-  Example triggers: "使用 serena", "用 unifuncs 搜索", "调用 mcp__serena__find_symbol"
-  Status: ✅ Assumed AVAILABLE (if mentioned by user)
+  Example triggers: "use serena", "use unifuncs to search", "call mcp__serena__find_symbol"
+  Status:  Assumed AVAILABLE (if mentioned by user)
   Strategy: Optimistic routing - honor user's explicit tool choice
 
 Optional Enhancement MCPs:
@@ -700,7 +741,7 @@ Optional Enhancement MCPs:
   Strategy: Lazy discovery - only if needed for enhancement
 
 Routing Decision for codex-code-reviewer:
-  Required: mcp__zen__codereview (assumed available ✅)
+  Required: mcp__zen__codereview (assumed available )
   Enhancement: serena tools (optional, will discover if needed)
   User preference: None mentioned in this request
 
@@ -714,7 +755,7 @@ Routing Decision for codex-code-reviewer:
 
 ```
 Intent Classification:
-- Primary Intent: Code review ✅
+- Primary Intent: Code review
 - Secondary Intent: None
 - Complexity: Standard (not deep analysis)
 - Urgency: Normal
@@ -735,7 +776,7 @@ Standards Alignment:
 
 ```
 Skill Matching:
-- codex-code-reviewer: 95% confidence ✅
+- codex-code-reviewer: 95% confidence
   - Reason: Intent is code review, has modified files
   - Standards support: P3 phase requirement
   - zen-mcp: Assumed available (optimistic)
@@ -772,7 +813,7 @@ Execution:
 
 Error Handling (if zen-mcp fails):
   1. Skill reports error to router
-  2. Router notifies user: "mcp__zen__codereview 当前不可用"
+  2. Router notifies user: "mcp__zen__codereview currently unavailable"
   3. Router suggests fallback: Main Claude direct code review
   4. User chooses: Continue with fallback OR troubleshoot MCP
 ```
@@ -782,19 +823,19 @@ Error Handling (if zen-mcp fails):
 **Main Router's Action:**
 
 ```
-代码审查已完成（使用 codex-code-reviewer）：
+Code review completed (using codex-code-reviewer):
 
-审查结果：
-- 审查文件：2 个
-- 发现问题：3 个（已修复）
-- 审查轮次：2 / 5
+Review results:
+- Reviewed files: 2
+- Issues found: 3 (fixed)
+- Review rounds: 2 / 5
 
-标准合规性检查：
-✅ G1: 已验证文档更新（PROJECTWIKI.md, CHANGELOG.md）
-✅ G3: 修复前已获得用户授权
-✅ 质量门槛：覆盖率达到 75%（超过 70% 阈值）
+Standards compliance check:
+ G1: Verified documentation updates (PROJECTWIKI.md, CHANGELOG.md)
+ G3: User authorization obtained before fixes
+ Quality threshold: Coverage reached 75% (exceeds 70% threshold)
 
-详细报告：
+Detailed report:
 [codex-code-reviewer's output]
 ```
 
@@ -802,12 +843,12 @@ Error Handling (if zen-mcp fails):
 
 ### Example 1: General Q&A Request
 
-**User:** "解释一下什么是机器学习中的过拟合？"
+**User:** "Explain what is overfitting in machine learning?"
 
 **Router Decision:**
 ```
 Intent: General Q&A
-Keywords: "解释一下", "什么是"
+Keywords: "explain", "what is"
 Target: Conceptual explanation
 Output: Answer/explanation (no file operations)
 
@@ -824,12 +865,12 @@ Rationale:
 
 ### Example 2: Deep Problem Investigation
 
-**User:** "深度分析一下为什么训练时loss不下降的问题"
+**User:** "Deeply analyze why the loss doesn't decrease during training"
 
 **Router Decision:**
 ```
 Intent: Deep problem investigation
-Keywords: "深度分析", "问题"
+Keywords: "deeply analyze", "problem"
 Target: Complex debugging/troubleshooting
 Output: Multi-stage investigation report
 
@@ -846,7 +887,7 @@ Rationale:
 
 ### Example 3: Simple Document Generation
 
-**User:** "生成项目的 README 文档"
+**User:** "Generate the project's README document"
 
 **Router Decision:**
 ```
@@ -866,7 +907,7 @@ Rationale:
 
 ### Example 4: Code Quality Check
 
-**User:** "使用codex对代码进行检查"
+**User:** "Use codex to check the code"
 
 **Router Decision:**
 ```
@@ -885,20 +926,20 @@ Rationale:
 
 ### Example 5: Deep Technical Analysis Request
 
-**User:** "深度分析 model_training.py 的训练逻辑，包括复杂度"
+**User:** "Deeply analyze the training logic of model_training.py, including complexity"
 
 **Router Decision:**
 ```
 Intent: Deep analysis
-Keywords: "深度分析", "复杂度"
+Keywords: "deeply analyze", "complexity"
 Target: Specific code file
 Output: Technical analysis document
 
 → Route to: deep-gemini
 
 Rationale:
-- "深度分析" signals need for comprehensive analysis
-- "复杂度" requires Big O analysis (deep-gemini feature)
+- "deeply analyze" signals need for comprehensive analysis
+- "complexity" requires Big O analysis (deep-gemini feature)
 - Not a standard doc, requires clink + docgen workflow
 ```
 
@@ -906,12 +947,12 @@ Rationale:
 
 ### Example 6: Planning Request
 
-**User:** "帮我制定一个用户认证功能的开发计划"
+**User:** "Help me create a development plan for user authentication feature"
 
 **Router Decision:**
 ```
 Intent: Planning
-Keywords: "制定", "计划"
+Keywords: "create", "plan"
 Scope: Feature development
 Output: plan.md
 
@@ -927,7 +968,7 @@ Rationale:
 
 ### Example 7: Ambiguous Request
 
-**User:** "生成一份文档"
+**User:** "Generate a document"
 
 **Router Decision:**
 ```
@@ -937,20 +978,20 @@ Ambiguity: What type of document?
 → Action: Ask User for Clarification
 
 Question to User:
-"您想生成哪种类型的文档？
+"What type of document do you want to generate?
 
-1. 标准项目文档（README, PROJECTWIKI, CHANGELOG）→ simple-gemini
-2. 深度技术分析文档（架构分析, 性能分析）→ deep-gemini
-3. 开发计划文档（plan.md）→ plan-down
+1. Standard project documentation (README, PROJECTWIKI, CHANGELOG) → simple-gemini
+2. Deep technical analysis documentation (architecture analysis, performance analysis) → deep-gemini
+3. Development plan documentation (plan.md) → plan-down
 
-请选择或说明文档类型。"
+Please select or specify the document type."
 ```
 
 ---
 
 ### Example 8: Multi-Skill Sequential
 
-**User:** "先制定计划，然后生成 README"
+**User:** "First create a plan, then generate README"
 
 **Router Decision:**
 ```
@@ -970,66 +1011,66 @@ Execution: Sequential (Task 1 must complete before Task 2)
 
 ### Example 9: Full Automation Mode - Correct Behavior
 
-**User:** "全程自动化，帮我完成这个项目的开发流程：分析现有代码，制定优化计划，生成文档，检查代码质量"
+**User:** "Full automation, help me complete this project's development workflow: analyze existing code, create optimization plan, generate documentation, check code quality"
 
 **Router Response (CORRECT - No Questions Asked):**
 ```
-[全自动模式] 检测到用户请求"全程自动化"，启动全自动工作流。
+[Full Automation Mode] Detected user request "full automation", initiating full automation workflow.
 
 Step 0: Standards Loading
-- 读取 Global CLAUDE.md: P1→P2→P3 workflow, G1 文档一等公民
-- 读取 Global CLAUDE.md: 模型开发原则
-- 读取 Project CLAUDE.md: [项目特定规则]
+- Read Global CLAUDE.md: P1→P2→P3 workflow, G1 Documentation First-Class Citizen
+- Read Global CLAUDE.md: Model Development Principles
+- Read Project CLAUDE.md: [Project-specific rules]
 
 Step 1: Intent Analysis
-- 检测到多任务顺序工作流
-- 任务序列: 分析 → 规划 → 文档 → 审查
+- Detected multi-task sequential workflow
+- Task sequence: Analysis → Planning → Documentation → Review
 
 Step 2: Auto-Routing Execution (NO USER CONFIRMATION)
 
-[全自动模式 - 任务 1: 分析现有代码]
-自动选择: zen-thinkdeep
-置信度: 75%
-理由: 需要深度分析，符合 P1 阶段要求
-标准依据: CLAUDE.md P1 - 分析问题
-→ 立即执行 zen-thinkdeep...
+[Full Automation Mode - Task 1: Analyze Existing Code]
+Auto-selected: zen-thinkdeep
+Confidence: 75%
+Rationale: Requires deep analysis, meets P1 phase requirements
+Standards basis: CLAUDE.md P1 - Problem Analysis
+→ Immediately execute zen-thinkdeep...
 
-[全自动模式 - 任务 2: 制定优化计划]
-自动选择: plan-down
-置信度: 90%
-理由: 明确规划意图，符合 P2 阶段要求
-标准依据: CLAUDE.md P2 - 制定方案，G11 强制使用 plan-down
-→ 立即执行 plan-down...
+[Full Automation Mode - Task 2: Create Optimization Plan]
+Auto-selected: plan-down
+Confidence: 90%
+Rationale: Clear planning intent, meets P2 phase requirements
+Standards basis: CLAUDE.md P2 - Solution Planning, G11 mandatory use of plan-down
+→ Immediately execute plan-down...
 
-自动选择: simple-gemini
-置信度: 65%
-理由: 标准文档生成，ambiguous 时选择 simple over deep
-标准依据: G1 - 文档一等公民
-→ 立即执行 simple-gemini...
+Auto-selected: simple-gemini
+Confidence: 65%
+Rationale: Standard document generation, choose simple over deep when ambiguous
+Standards basis: G1 - Documentation First-Class Citizen
+→ Immediately execute simple-gemini...
 
-[全自动模式 - 任务 4: 检查代码质量]
-自动选择: codex-code-reviewer
-置信度: 95%
-理由: 明确代码审查意图，符合 P3 阶段要求
-标准依据: CLAUDE.md P3 - 执行方案后需审查，G11 强制使用 codex
-→ 立即执行 codex-code-reviewer...
+[Full Automation Mode - Task 4: Check Code Quality]
+Auto-selected: codex-code-reviewer
+Confidence: 95%
+Rationale: Clear code review intent, meets P3 phase requirements
+Standards basis: CLAUDE.md P3 - Review after execution, G11 mandatory use of codex
+→ Immediately execute codex-code-reviewer...
 
-[全自动模式 - 执行计划]
-执行方式：顺序执行（Sequential）
-1. zen-thinkdeep → 分析现有代码结构和问题
-2. plan-down → 基于分析结果制定优化计划
-3. simple-gemini → 生成 PROJECTWIKI.md 和 README.md
-4. codex-code-reviewer → 全面代码质量审查
+[Full Automation Mode - Execution Plan]
+Execution mode: Sequential
+1. zen-thinkdeep → Analyze existing code structure and issues
+2. plan-down → Create optimization plan based on analysis results
+3. simple-gemini → Generate PROJECTWIKI.md and README.md
+4. codex-code-reviewer → Comprehensive code quality review
 
-标准依据: CLAUDE.md (P1→P2→P3), CLAUDE.md (质量原则)
-平均置信度: 81.25%
+Standards basis: CLAUDE.md (P1→P2→P3), CLAUDE.md (Quality Principles)
+Average confidence: 81.25%
 
-⚠️ 注意：全程无需用户确认，自动执行所有步骤。
+✅ Note: No user confirmation needed throughout, automatically execute all steps.
 
-[全自动模式 - 任务完成]
-所有任务执行完毕。
-→ 生成决策日志 auto_log.md...
-→ 使用 simple-gemini 记录完整决策过程
+[Full Automation Mode - Task Completion]
+All tasks completed.
+→ Generate decision log auto_log.md...
+→ Use simple-gemini to record complete decision-making process
 ```
 
 **Final Step - Auto Log Generation (MANDATORY):**
@@ -1039,39 +1080,39 @@ After all tasks complete in Full Automation Mode:
 Tool: simple-gemini (or invoke directly via skill)
 Task: Generate auto_log.md
 Content Requirements:
-  - 完整决策时间线（每个阶段的时间戳）
-  - 所有自动决策的选择理由和标准依据
-  - 调用的技能/工具列表及参数
-  - 置信度评分和风险评估
-  - 遇到的问题和解决方案
-  - 最终结果和输出文件清单
-  - 决策树可视化（Mermaid）
+  - Complete decision timeline (timestamps for each phase)
+  - All auto-decision rationales and standards basis
+  - Skills/tools invoked list and parameters
+  - Confidence scores and risk assessment
+  - Issues encountered and solutions
+  - Final results and output files list
+  - Decision tree visualization (Mermaid)
 
 Template Structure for auto_log.md:
 ---
-# 全自动化执行日志 (Auto Execution Log)
-生成时间: {timestamp}
+# Full Automation Execution Log (Auto Execution Log)
+Generated at: {timestamp}
 
-## 执行摘要 (Executive Summary)
-- 用户初始请求: {original_request}
-- 执行模式: 全自动化
-- 总任务数: {task_count}
-- 成功/失败: {success_count}/{failure_count}
-- 总耗时: {duration}
+## Executive Summary (Executive Summary)
+- User initial request: {original_request}
+- Execution mode: Full automation
+- Total tasks: {task_count}
+- Success/Failure: {success_count}/{failure_count}
+- Total duration: {duration}
 
-## 决策时间线 (Decision Timeline)
+## Decision Timeline (Decision Timeline)
 {chronological list of all decisions}
 
-## 技能调用记录 (Skills Invoked)
+## Skills Invoked (Skills Invoked)
 {list of all skills with parameters and results}
 
-## 自动决策详情 (Auto-Decision Details)
+## Auto-Decision Details (Auto-Decision Details)
 {detailed rationale for each auto-decision}
 
-## 遇到的问题 (Issues Encountered)
+## Issues Encountered (Issues Encountered)
 {any errors or blockers, and how they were resolved}
 
-## 输出文件清单 (Output Files)
+## Output Files (Output Files)
 {list of all generated files}
 ---
 
@@ -1081,25 +1122,25 @@ Purpose: Provide complete transparency to user
 **Anti-Pattern - WRONG Full Automation Behavior:**
 ```
 ❌ WRONG:
-"由于当前是全自动化模式，我将自动进入 P2 阶段并调用 plan-down 生成详细方案。
- 是否继续？（全自动模式下默认继续，如需调整技术栈请告知）"
+"Because current mode is full automation, I will automatically enter P2 phase and call plan-down to generate detailed plan.
+ Should I continue? (Default to continue in automation mode, please let me know if tech stack needs adjustment)"
 
 Why Wrong:
-- 询问"是否继续？" - 违反全自动化原则
-- "如需调整技术栈请告知" - 不应提示用户干预
-- 应该直接执行，而非询问
+- Asking "Should I continue?" - Violates full automation principle
+- "please let me know if tech stack needs adjustment" - Should not prompt user intervention
+- Should execute directly, not ask
 
 ✅ CORRECT:
-"[全自动模式] 检测到需要制定方案，自动进入 P2 阶段。
- 调用 plan-down skill 生成详细方案...
- （决策依据：用户初始请求包含'全程自动化'，当前阶段 P1→P2，标准依据 G11）"
+"[Full Automation Mode] Detected need for planning, automatically entering P2 phase.
+ Calling plan-down skill to generate detailed plan...
+ (Decision basis: User initial request contains 'full automation', current phase P1→P2, standards basis G11)"
 ```
 
 ---
 
 ### Example 10: User Explicitly Mentions MCP Tools
 
-**User:** "使用 serena 的 find_symbol 工具来分析代码结构，然后生成文档"
+**User:** "Use serena's find_symbol tool to analyze code structure, then generate documentation"
 
 **Router Decision:**
 ```
@@ -1109,8 +1150,8 @@ Task 1: Code structure analysis (using serena)
 Task 2: Document generation
 
 Step 0.2: MCP Assumptions
-→ zen-mcp: Assumed AVAILABLE (default) ✅
-→ serena: Assumed AVAILABLE (user explicitly mentioned) ✅
+→ zen-mcp: Assumed AVAILABLE (default)
+→ serena: Assumed AVAILABLE (user explicitly mentioned)
 → No pre-check needed for either
 
 Step 1: Intent Analysis
@@ -1137,7 +1178,7 @@ Note: Can leverage serena findings from Task 1
 
 Error Handling:
 If mcp__serena__find_symbol fails at runtime:
-  → Notify user: "serena 工具当前不可用"
+  → Notify user: "serena tool is currently unavailable"
   → Fallback: Use zen-mcp code analysis tools or manual code reading
   → User choice: Continue with fallback OR troubleshoot serena MCP
 ```
@@ -1146,7 +1187,7 @@ If mcp__serena__find_symbol fails at runtime:
 
 ### Example 11: Complete Task Lifecycle with Active Monitoring ⭐ BEST PRACTICE
 
-**User:** "帮我开发一个用户登录功能"
+**User:** "Help me develop a user login feature"
 
 **Router Active Monitoring Workflow:**
 
@@ -1184,14 +1225,14 @@ Phase 5: Final Validation
 → Output: Comprehensive quality report
 
 Full Execution Log:
-1. plan-down → plan.md generated ✅
+1. plan-down → plan.md generated
 2. Main Claude → login.py generated
-3. codex-code-reviewer → login.py validated ✅
+3. codex-code-reviewer → login.py validated
 4. simple-gemini → test_login.py generated
-5. codex-code-reviewer → test_login.py validated ✅
-6. Main Claude → tests executed ✅
-7. simple-gemini → PROJECTWIKI.md updated ✅
-8. codex-code-reviewer → final validation ✅
+5. codex-code-reviewer → test_login.py validated
+6. Main Claude → tests executed
+7. simple-gemini → PROJECTWIKI.md updated
+8. codex-code-reviewer → final validation
 
 Router's Active Role:
 - Monitored entire lifecycle (5 phases)
@@ -1206,7 +1247,7 @@ Router's Active Role:
 
 ### Example 12: Code + Review Workflow
 
-**User:** "生成测试文件然后检查代码质量"
+**User:** "Generate test files then check code quality"
 
 **Router Decision:**
 ```
@@ -1239,9 +1280,9 @@ Execution: Sequential
 
 2. **Keyword Detection:**
    - Look for explicit skill/tool names (chat, thinkdeep, codex, gemini, planner)
-   - Look for action verbs (解释, 调查, 检查, 生成, 分析, 规划)
-   - Look for output types (答案, 调查报告, 文档, 计划, 测试)
-   - Look for question patterns (什么是, 如何理解, 为什么)
+   - Look for action verbs (explain, investigate, check, generate, analyze, plan)
+   - Look for output types (answer, investigation report, documentation, plan, test)
+   - Look for question patterns (what is, how to understand, why)
 
 3. **Context Awareness:**
    - Check git status for recently modified files
@@ -1268,35 +1309,35 @@ Execution: Sequential
 
 **Format:**
 ```
-[决策通知]
-检测到任务类型：[任务类型]
-选择技能：[技能名称]
-理由：[简短说明]
+[Decision Notification]
+Detected task type: [Task Type]
+Selected skill: [Skill Name]
+Rationale: [Brief explanation]
 
-开始执行...
+Starting execution...
 ```
 
 **Example:**
 ```
-[决策通知]
-检测到任务类型：代码质量审查
-选择技能：codex-code-reviewer
-理由：您请求检查代码质量，codex-code-reviewer 提供全面的 5 维度审查
+[Decision Notification]
+Detected task type: Code quality review
+Selected skill: codex-code-reviewer
+Rationale: You requested code quality check, codex-code-reviewer provides comprehensive 5-dimensional review
 
-开始执行...
+Starting execution...
 ```
 
 ## Routing Decision Matrix
 
 | User Intent | Primary Keywords | Selected Tool/Skill | Rationale |
 |-------------|-----------------|---------------------|-----------|
-| 一般问答 | 解释, 什么是, 如何理解 | zen-chat | General Q&A, no file ops |
-| 深度问题调查 | 深度分析问题, 调查bug, 系统性分析 | zen-thinkdeep | Multi-stage investigation |
-| 代码审查 | 检查, 审查, codex | codex-code-reviewer | Code quality validation |
-| 标准文档 | 文档, README, CHANGELOG, 测试 | simple-gemini | Standard doc templates |
-| 深度技术分析 | 深度, 分析, 架构, 性能, 复杂度 | deep-gemini | Technical analysis + complexity |
-| 规划制定 | 计划, plan, 规划, 分解 | plan-down | Task decomposition + validation |
-| 文档生成（不明确） | 生成文档 | Ask User | Ambiguous - need clarification |
+| General Q&A | explain, what is, how to understand | zen-chat | General Q&A, no file ops |
+| Deep Problem Investigation | deeply analyze problem, investigate bug, systematic analysis | zen-thinkdeep | Multi-stage investigation |
+| Code Review | check, review, codex | codex-code-reviewer | Code quality validation |
+| Standard Documentation | documentation, README, CHANGELOG, test | simple-gemini | Standard doc templates |
+| Deep Technical Analysis | deep, analyze, architecture, performance, complexity | deep-gemini | Technical analysis + complexity |
+| Planning | plan, planning, decompose | plan-down | Task decomposition + validation |
+| Document Generation (Unclear) | generate document | Ask User | Ambiguous - need clarification |
 
 ## Special Cases
 
@@ -1311,7 +1352,7 @@ Router Analysis:
 - Request is outside skill scope
 
 → Decision: Execute directly with Main Claude
-→ Notification: "此任务将由主模型直接处理（无需专用技能）"
+→ Notification: "This task will be handled directly by the main model (no specialized skill needed)"
 ```
 
 ---
@@ -1347,15 +1388,15 @@ Skill Execution Error:
 Router Receives Error and Responds:
 
 → Notification to User:
-  "在执行 deep-gemini 时遇到问题：
-   mcp__zen__docgen 当前不可用。
+  "Issue encountered while executing deep-gemini:
+   mcp__zen__docgen is currently unavailable.
 
-   可选方案：
-   1. 使用 simple-gemini（仅需 mcp__zen__clink）
-   2. 主模型直接生成文档（无 MCP 增强）
-   3. 检查 zen-mcp 服务状态后重试
+   Available options:
+   1. Use simple-gemini (only requires mcp__zen__clink)
+   2. Main model generates document directly (no MCP enhancement)
+   3. Check zen-mcp service status and retry
 
-   请选择（或输入 3 后使用 /mcp status 检查）"
+   Please choose (or enter 3 and use /mcp status to check)"
 
 User Choice Handling:
 - Choice 1 → Route to simple-gemini
@@ -1371,24 +1412,24 @@ Note: This only happens when zen-mcp actually fails at runtime,
 **Action:**
 ```
 Direct MCP Invocation Error:
-- User request: "使用 serena 的 find_symbol 分析代码"
+- User request: "Use serena's find_symbol to analyze code"
 - Failed MCP call: mcp__serena__find_symbol
 - Error: "MCP server 'serena' not found" or "Tool not available"
 
 Router Receives Error and Responds:
 
 → Notification to User:
-  "您指定的 MCP 工具当前不可用：
+  "Your specified MCP tool is currently unavailable:
    mcp__serena__find_symbol
 
-   错误信息：{error_details}
+   Error details: {error_details}
 
-   可选方案：
-   1. 使用 zen-mcp 的代码分析工具（mcp__zen__thinkdeep）
-   2. 主模型直接读取代码进行分析
-   3. 检查 serena MCP 服务状态后重试（/mcp status）
+   Available options:
+   1. Use zen-mcp's code analysis tool (mcp__zen__thinkdeep)
+   2. Main model reads code directly for analysis
+   3. Check serena MCP service status and retry (/mcp status)
 
-   请选择处理方式："
+   Please choose handling method:"
 
 User Choice Handling:
 - Choice 1 → Route to zen-thinkdeep (alternative analysis)
@@ -1405,7 +1446,7 @@ Note: User-mentioned MCP tools are assumed available (optimistic),
 
 **Scenario:** User explicitly requests a different skill
 
-**User:** "不用 codex，用 gemini 来分析"
+**User:** "Don't use codex, use gemini to analyze"
 
 **Action:**
 ```
@@ -1415,7 +1456,7 @@ Router Analysis:
 
 → Decision: Respect user choice
 → Route to: deep-gemini
-→ Notification: "已切换到 deep-gemini（根据您的要求）"
+→ Notification: "Switched to deep-gemini (as per your request)"
 ```
 
 ## Notes
@@ -1464,13 +1505,13 @@ Router Analysis:
   - Provide recommendations with rationale
 
 - **Full Automation Mode**:
-  - **Activation**: Keywords in user's initial request: "全程自动化", "full automation", "自动化流程"
+  - **Activation**: Keywords in user's initial request: "full automation", "complete automation", "automated workflow"
   - **Behavior**: Router and Main Claude make ALL decisions autonomously
   - **CRITICAL - DO NOT ask user**:
-    - ❌ "是否继续？"
-    - ❌ "请选择..."
-    - ❌ "是否需要..."
-    - ✅ Direct execution with logged rationale
+    - "Should I continue?"
+    - "Please choose..."
+    - "Do you need..."
+    - Direct execution with logged rationale
   - **Decision Rules**:
     - Lower confidence threshold: ≥50%
     - Auto-select best option (no user choice)
@@ -1487,7 +1528,7 @@ Router Analysis:
 
 - **Transparency**: Always inform user which skill/tool was selected and why
   - Focus on intent match and standards alignment in routing notification
-  - Honor user's explicit MCP tool choice (e.g., "使用 serena") without pre-checking
+  - Honor user's explicit MCP tool choice (e.g., "use serena") without pre-checking
   - Only mention MCP status if there's a runtime failure
   - Acknowledge when routing based on user's explicit MCP preference
 
@@ -1496,8 +1537,8 @@ Router Analysis:
   - Respect user's explicit skill preference
 
 - **Efficiency**: Prefer simpler skills when ambiguous
-  - simple-gemini over deep-gemini (unless "深度" mentioned)
-  - zen-chat over zen-thinkdeep (unless "调查" or "bug" mentioned)
+  - simple-gemini over deep-gemini (unless "deep" mentioned)
+  - zen-chat over zen-thinkdeep (unless "investigate" or "bug" mentioned)
   - Direct execution over complex skills when unclear
 
 - **Context-Aware**: Consider project state, recent activity, git status, and CLAUDE.md phase

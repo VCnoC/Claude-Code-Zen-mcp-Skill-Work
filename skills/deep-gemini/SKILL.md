@@ -1,9 +1,9 @@
 ---
 name: deep-gemini
-description: Deep technical documentation generation workflow using zen mcp's clink and docgen tools. First uses clink to launch gemini CLI in WSL for code analysis, then uses docgen for structured document generation with complexity analysis. Specializes in documents requiring deep understanding of code logic, model architecture, or performance bottleneck analysis. Use when user requests "使用gemini深度分析", "生成架构分析文档", "分析性能瓶颈", "深度理解代码逻辑", or similar deep analysis tasks. Default output is .md format.
+description: Deep technical documentation generation workflow using zen mcp's clink and docgen tools. First uses clink to launch gemini CLI in WSL for code analysis, then uses docgen for structured document generation with complexity analysis. Specializes in documents requiring deep understanding of code logic, model architecture, or performance bottleneck analysis. Use when user requests "use gemini for deep analysis", "generate architecture analysis document", "analyze performance bottlenecks", "deeply understand code logic", or similar deep analysis tasks. Default output is .md format.
 ---
 
-# Deep Gemini - 深度技术文档生成
+# Deep Gemini - Deep Technical Documentation Generation
 
 ## Overview
 
@@ -23,9 +23,9 @@ All operations leverage zen-mcp's workflow tools to ensure thorough analysis and
 
 **Two-Stage Workflow:**
 ```
-Main Claude → clink → Gemini CLI (分析) → docgen → 结构化文档 → User
-     ↑                                                              ↓
-     └──────────────────── User Approval ─────────────────────────┘
+Main Claude → clink → Gemini CLI (Analysis) → docgen → Structured Doc → User
+     ↑                                                                  ↓
+     └──────────────────── User Approval ──────────────────────────────┘
 ```
 
 **Division of Responsibilities:**
@@ -41,12 +41,12 @@ Main Claude → clink → Gemini CLI (分析) → docgen → 结构化文档 →
 ## When to Use This Skill
 
 Trigger this skill when the user requests:
-- "使用gemini深度分析代码逻辑"
-- "生成架构分析文档"
-- "分析性能瓶颈并生成报告"
-- "深度理解这段代码并生成文档"
-- "生成模型架构分析"
-- "使用gemini进行深度分析"
+- "Use gemini to deeply analyze code logic"
+- "Generate architecture analysis document"
+- "Analyze performance bottlenecks and generate report"
+- "Deeply understand this code and generate documentation"
+- "Generate model architecture analysis"
+- "Use gemini for deep analysis"
 - Any request requiring deep technical understanding and analysis documentation
 
 **Distinction from simple-gemini:**
@@ -57,35 +57,35 @@ Trigger this skill when the user requests:
 
 This skill specializes in generating the following types of deep analysis documents:
 
-1. **代码逻辑深度分析** (Code Logic Deep Dive)
+1. **Code Logic Deep Dive**
    - Control flow analysis
    - Data flow tracing
    - **Algorithm complexity analysis (Big O notation)**
    - Edge case identification
    - Performance characteristics
 
-2. **模型架构分析** (Model Architecture Analysis)
+2. **Model Architecture Analysis**
    - Architecture design patterns
    - Component interaction diagrams
    - Layer-by-layer analysis
    - Design decision rationale
    - **Complexity evaluation of architectural choices**
 
-3. **性能瓶颈分析** (Performance Bottleneck Analysis)
+3. **Performance Bottleneck Analysis**
    - Profiling report interpretation
    - Hotspot identification
    - **Time/space complexity analysis**
    - Optimization recommendations
    - Resource usage analysis
 
-4. **技术债务评估** (Technical Debt Assessment)
+4. **Technical Debt Assessment**
    - Code smell identification
    - Refactoring priorities
    - Risk assessment
    - **Complexity debt analysis**
    - Improvement roadmap
 
-5. **安全分析报告** (Security Analysis Report)
+5. **Security Analysis Report**
    - Vulnerability assessment
    - Attack surface analysis
    - Security best practice compliance
@@ -99,33 +99,13 @@ This skill specializes in generating the following types of deep analysis docume
 **Key Feature - Complexity Analysis:**
 All generated documents include Big O complexity analysis where applicable, providing developers with clear performance characteristics of analyzed code.
 
-## Operation Mode (Based on Router's automation_mode)
+## Operation Mode (automation_mode - READ FROM SSOT)
 
-**🚨 CRITICAL**: This skill **MUST read** the `automation_mode` status from the context set by main-router. **DO NOT** ask the user about automation preference or check for trigger phrases - this is handled exclusively by the router.
+automation_mode definition and constraints: See CLAUDE.md「📚 共享概念速查」
 
-### Mode Detection (READ ONLY - Three-Layer Architecture)
-
-**Layer 1: Router (Global Truth Source)**
-- Only the main-router judges and sets `automation_mode` based on initial request
-- Status is set once at task start and remains unchanged throughout lifecycle
-
-**Layer 2: Transmission**
-- Router passes `automation_mode` status to this skill via context
-- Format: `[AUTOMATION_MODE: true]` or `[AUTOMATION_MODE: false]`
-
-**Layer 3: Skill (READ ONLY - This Skill)**
-
-**✅ MUST DO:**
-- Read `automation_mode` from context passed by router
-- Adjust behavior based on the status:
-  - `automation_mode=true` → Auto-approve all decisions, log to auto_log.md
-  - `automation_mode=false` → Interactive confirmation required
-
-**❌ ABSOLUTELY FORBIDDEN:**
-- ❌ Ask user "是否需要自动化执行？"
-- ❌ Check user's initial request for automation keywords
-- ❌ Modify the automation_mode status set by router
-- ❌ Re-detect automation triggers during execution
+**This skill's role**: Skill Layer (read-only), read from context `[AUTOMATION_MODE: true/false]`
+- `false` → Interactive: Show document, ask for approval
+- `true` → Automated: Auto-save document, log to auto_log.md
 
 ## Workflow: Two-Stage Deep Analysis Documentation Process
 
@@ -147,12 +127,12 @@ All generated documents include Big O complexity analysis where applicable, prov
 
 3. **Define Scope:**
    ```
-   分析目标：[明确分析对象]
-   分析类型：[代码逻辑/架构/性能/安全]
-   关键问题：[要回答的核心问题]
-   分析深度：[表面/中等/深入]
-   复杂度分析：[是/否]
-   相关文件：[列出所有相关文件路径]
+   Analysis Target: [Specify analysis object]
+   Analysis Type: [Code Logic/Architecture/Performance/Security]
+   Key Questions: [Core questions to answer]
+   Analysis Depth: [Surface/Medium/Deep]
+   Complexity Analysis: [Yes/No]
+   Relevant Files: [List all relevant file paths]
    ```
 
 **Output:** Well-defined analysis scope and all necessary context files
@@ -167,28 +147,28 @@ Invoke gemini CLI session via clink for deep analysis:
 Tool: mcp__zen__clink
 Parameters:
 - cli_name: "gemini"
-- prompt: "请对以下代码/架构/性能数据进行深度分析：
+- prompt: "Please perform deep analysis on the following code/architecture/performance data:
 
-  分析目标：[from Phase 1]
-  分析类型：[from Phase 1]
-  关键问题：[from Phase 1]
+  Analysis Target: [from Phase 1]
+  Analysis Type: [from Phase 1]
+  Key Questions: [from Phase 1]
 
-  请进行以下分析：
-  1. [具体分析维度 1]
-  2. [具体分析维度 2]
-  3. [具体分析维度 3]
-  4. 算法复杂度评估（时间复杂度、空间复杂度，使用 Big O 表示法）
+  Please perform the following analysis:
+  1. [Specific analysis dimension 1]
+  2. [Specific analysis dimension 2]
+  3. [Specific analysis dimension 3]
+  4. Algorithm complexity assessment (time complexity, space complexity, using Big O notation)
 
-  提供详细的分析结果，包括：
-  - 核心发现
-  - 关键洞察
-  - 复杂度分析（Big O）
-  - 潜在问题
-  - 改进建议"
+  Provide detailed analysis results, including:
+  - Core findings
+  - Key insights
+  - Complexity analysis (Big O)
+  - Potential issues
+  - Improvement recommendations"
 
-- files: [所有相关文件的绝对路径]
+- files: [Absolute paths of all relevant files]
 - role: "default"
-- continuation_id: [首次调用时不提供]
+- continuation_id: [Not provided for first call]
 ```
 
 **What Happens (clink bridges to Gemini CLI):**
@@ -221,25 +201,25 @@ Invoke docgen tool to generate structured document based on analysis results.
 Tool: mcp__zen__docgen
 Parameters:
   step: |
-    探查分析项目，基于以下深度分析结果制定文档生成计划：
+    Explore the analysis project and create a document generation plan based on the following deep analysis results:
 
-    分析结果：
-    [从 Phase 2 获得的 Gemini CLI 分析结果]
+    Analysis Results:
+    [Gemini CLI analysis results obtained from Phase 2]
 
-    文档要求：
-    1. 包含执行摘要
-    2. 详细的方法论说明
-    3. 核心发现（分层次、分维度）
-    4. **算法复杂度分析章节**（Big O 表示法，包含时间和空间复杂度）
-    5. 详细分析（每个发现的深入解释）
-    6. 改进建议（优先级排序）
-    7. 结论与下一步行动
+    Document Requirements:
+    1. Include executive summary
+    2. Detailed methodology description
+    3. Core findings (hierarchical, multi-dimensional)
+    4. **Algorithm complexity analysis section** (Big O notation, including time and space complexity)
+    5. Detailed analysis (in-depth explanation of each finding)
+    6. Improvement recommendations (priority-sorted)
+    7. Conclusion and next steps
 
-    格式要求：
-    - Markdown 格式
-    - 使用 Mermaid 图表（架构图、流程图、时序图）
-    - 代码示例带语法高亮
-    - 复杂度分析使用表格呈现
+    Format Requirements:
+    - Markdown format
+    - Use Mermaid diagrams (architecture diagrams, flowcharts, sequence diagrams)
+    - Code examples with syntax highlighting
+    - Complexity analysis presented in tables
 
   step_number: 1
   total_steps: 2
@@ -255,24 +235,24 @@ Parameters:
 Tool: mcp__zen__docgen
 Parameters:
   step: |
-    为分析结果生成结构化文档，包含：
-    - 执行摘要
-    - 复杂度分析（Big O 表示法）
-    - Mermaid 图表
-    - 代码示例
-    - 改进建议
+    Generate structured document for analysis results, including:
+    - Executive summary
+    - Complexity analysis (Big O notation)
+    - Mermaid diagrams
+    - Code examples
+    - Improvement recommendations
 
   step_number: 2
   total_steps: 2
   next_step_required: false
 
   findings: |
-    [Step 1 探查结果 + Gemini CLI 分析结果]
+    [Step 1 exploration results + Gemini CLI analysis results]
 
   num_files_documented: 0
   document_complexity: "medium"
 
-  continuation_id: [从 Step 1 继承]
+  continuation_id: [Inherited from Step 1]
 ```
 
 **What Happens (docgen workflow execution):**
@@ -293,7 +273,7 @@ Parameters:
 
 **docgen's Specialized Capabilities:**
 - Dual-phase workflow (exploration → documentation)
-- **Big O complexity analysis integration** ✅
+- **Big O complexity analysis integration**
 - Structured document formatting
 - Professional technical writing
 - Automatic Mermaid diagram generation
@@ -305,71 +285,42 @@ Parameters:
 
 **Main Claude's Action:**
 
-1. **🚨 First: Read automation_mode from Context**
-
-   ```
-   IF [AUTOMATION_MODE: false] → Interactive Mode (show document and ask for approval)
-   IF [AUTOMATION_MODE: true] → Automated Mode (show document and auto-save)
-   ```
+1. ** automation_mode check**: `[AUTOMATION_MODE: false]` → Interactive (show + ask) / `true` → Automated (show + auto-save)
 
 2. **Present Document to User:**
 
    **A) Interactive Mode (automation_mode = false):**
    ```
-   深度分析文档已生成：
+   Deep analysis document has been generated:
 
-   [显示文档内容摘要]
+   [Display document content summary]
 
-   文档统计：
-   - 字数：[N]
-   - 章节数：[N]
-   - Mermaid 图表：[N]
-   - 代码示例：[N]
-   - 复杂度分析：[N 个函数/算法]
+   Stats: [N] words, [N] sections, [N] diagrams, [N] examples, [N] complexity analyses
+   Findings: [Core finding 1], [Core finding 2], [Core finding 3]
+   Complexity: Highest O(?), Bottleneck: [Description]
 
-   关键发现：
-   - [核心发现 1]
-   - [核心发现 2]
-   - [核心发现 3]
-
-   复杂度摘要：
-   - 最高时间复杂度：O(?)
-   - 主要瓶颈：[描述]
-
-   是否需要调整或补充？
-   - 满意：保存文档
-   - 需要修改：请说明修改要求
+   Do you need adjustments or additions?
+   - Satisfied: Save document
+   - Need modifications: Please specify modification requirements
    ```
 
    **B) Automated Mode (automation_mode = true):**
    ```
-   [全自动模式] 深度分析文档已生成并自动保存：
+   [Fully Automated Mode] Deep analysis document has been generated and automatically saved:
 
-   [显示文档内容摘要]
+   [Display document content summary]
 
-   文档统计：
-   - 字数：[N]
-   - 章节数：[N]
-   - Mermaid 图表：[N]
-   - 代码示例：[N]
-   - 复杂度分析：[N 个函数/算法]
+   Stats: [N] words, [N] sections, [N] diagrams, [N] examples, [N] complexity analyses
+   Findings: [Core finding 1], [Core finding 2], [Core finding 3]
+   Complexity: Highest O(?), Bottleneck: [Description]
 
-   关键发现：
-   - [核心发现 1]
-   - [核心发现 2]
-   - [核心发现 3]
+   [Automated Save Decision Record]
+   Decision: Document quality meets standards, automatically saved
+   Confidence: high
+   Standards basis: Contains all required sections (executive summary, complexity analysis, mermaid diagrams, recommendations)
+   Save path: docs/analysis/[analysis_type]_analysis_[timestamp].md
 
-   复杂度摘要：
-   - 最高时间复杂度：O(?)
-   - 主要瓶颈：[描述]
-
-   [自动保存决策记录]
-   决策：文档质量符合标准，自动保存
-   置信度：high
-   标准依据：包含所有必需章节（executive summary, complexity analysis, mermaid diagrams, recommendations）
-   保存路径：docs/analysis/[analysis_type]_analysis_[timestamp].md
-
-   已记录到 auto_log.md
+   Recorded in auto_log.md
    ```
 
 2. **Handle Revisions (if requested):**
@@ -379,13 +330,13 @@ Parameters:
    Tool: mcp__zen__clink
    Parameters:
    - cli_name: "gemini"
-   - prompt: "请重新分析以下方面：
+   - prompt: "Please re-analyze the following aspects:
 
-     [用户的修改要求]
+     [User's modification requirements]
 
-     请提供更新的分析结果。"
+     Please provide updated analysis results."
 
-   - continuation_id: [从 Phase 2 继承]
+   - continuation_id: [Inherited from Phase 2]
    ```
 
    **For Document Revision (use docgen):**
@@ -393,23 +344,23 @@ Parameters:
    Tool: mcp__zen__docgen
    Parameters:
      step: |
-       请对文档进行以下修改：
+       Please make the following modifications to the document:
 
-       [用户的修改要求]
+       [User's modification requirements]
 
-       请提供修订后的完整文档。
+       Please provide the revised complete document.
 
-     step_number: 3  # 继续工作流
+     step_number: 3  # Continue workflow
      total_steps: 3
      next_step_required: false
 
      findings: |
-       [之前生成的文档内容 + 用户修改要求]
+       [Previously generated document content + user modification requirements]
 
-     num_files_documented: 1  # 已完成主文档
+     num_files_documented: 1  # Main document completed
      document_complexity: "medium"
 
-     continuation_id: [从 Phase 3 继承]
+     continuation_id: [Inherited from Phase 3]
    ```
 
 3. **Save Final Document:**
@@ -468,38 +419,38 @@ continuation_id:    # Session ID to continue previous gemini CLI session
 **Key Parameters (Workflow Required):**
 
 ```yaml
-# 必填参数（工作流字段）
-step: |             # 当前步骤的描述和要求
+# Required Parameters (Workflow Fields)
+step: |             # Description and requirements of the current step
   [Detailed instructions for document generation]
   [Must include complexity analysis requirements]
 
-step_number: 1      # 当前步骤编号
-total_steps: 2      # 预计总步骤数
-next_step_required: true   # 是否需要下一步
+step_number: 1      # Current step number
+total_steps: 2      # Estimated total steps
+next_step_required: true   # Whether next step is required
 
-findings: |         # 累积的发现和信息
+findings: |         # Accumulated findings and information
   [Previous findings + Analysis results]
 
-# 必填参数（docgen 特定）
-num_files_documented: 0    # 已记录的文件数量
-document_complexity: "medium"  # 文档复杂度（low/medium/high）
+# Required Parameters (docgen-specific)
+num_files_documented: 0    # Number of files documented
+document_complexity: "medium"  # Document complexity (low/medium/high)
 
-# 可选参数
-continuation_id:    # 继续会话 ID
+# Optional Parameters
+continuation_id:    # Continuation session ID
 
-# ❌ 不支持的参数（会被拒绝）
-# prompt - 不接受
-# files - 不接受
-# model - 显式排除
-# temperature - 显式排除
-# thinking_mode - 显式排除
-# images - 显式排除
-# working_directory - 不存在
+# Unsupported Parameters (will be rejected)
+# prompt - Not accepted
+# files - Not accepted
+# model - Explicitly excluded
+# temperature - Explicitly excluded
+# thinking_mode - Explicitly excluded
+# images - Explicitly excluded
+# working_directory - Does not exist
 ```
 
 **Specialized Capabilities:**
 - Dual-phase workflow (exploration → per-file documentation)
-- **Big O complexity analysis integration** ✅
+- **Big O complexity analysis integration**
 - Professional technical writing
 - Automatic Mermaid diagram generation
 - Code example formatting
@@ -510,7 +461,7 @@ continuation_id:    # 继续会话 ID
   - Executive summary
   - Methodology description
   - Findings with evidence
-  - **Complexity analysis section (Big O notation)** ✅
+  - **Complexity analysis section (Big O notation)**
   - Mermaid diagrams
   - Code examples
   - Recommendations
@@ -588,13 +539,13 @@ Phase 5: Save document (Main Claude)
 Use tables for clarity:
 
 ```markdown
-## 算法复杂度分析
+## Algorithm Complexity Analysis
 
-| 函数/算法 | 时间复杂度 | 空间复杂度 | 说明 |
-|----------|-----------|-----------|------|
-| train_model() | O(n²) | O(n) | 嵌套循环导致二次复杂度 |
-| predict() | O(n log n) | O(1) | 排序操作主导 |
-| preprocess() | O(n) | O(n) | 线性扫描，额外存储 |
+| Function/Algorithm | Time Complexity | Space Complexity | Description |
+|-------------------|----------------|------------------|-------------|
+| train_model() | O(n²) | O(n) | Nested loops cause quadratic complexity |
+| predict() | O(n log n) | O(1) | Sorting operations dominate |
+| preprocess() | O(n) | O(n) | Linear scan, additional storage |
 ```
 
 **Mermaid Diagram Types:**
@@ -614,136 +565,136 @@ Use tables for clarity:
 
 ### Scenario 1: Code Logic Deep Dive with Complexity Analysis
 
-**User:** "使用gemini深度分析 src/model_training.py 的训练逻辑，包括复杂度分析"
+**User:** "Use gemini to deeply analyze the training logic in src/model_training.py, including complexity analysis"
 
 **Main Claude:**
 ```
-好的，我将使用 gemini 对训练逻辑进行深度分析，包括算法复杂度评估。
+Okay, I will use gemini to perform deep analysis on the training logic, including algorithm complexity assessment.
 
-[Phase 1: 收集上下文]
-读取 src/model_training.py 及相关依赖...
+[Phase 1: Gathering Context]
+Reading src/model_training.py and related dependencies...
 
-[Phase 2: 使用 clink 调用 Gemini CLI 分析]
-正在进行深度分析...
-- 控制流分析
-- 数据流追踪
-- 算法复杂度计算
-- 瓶颈识别
+[Phase 2: Using clink to invoke Gemini CLI for analysis]
+Performing deep analysis...
+- Control flow analysis
+- Data flow tracing
+- Algorithm complexity calculation
+- Bottleneck identification
 
-[Phase 3: 使用 docgen 生成结构化文档]
-生成带复杂度分析的完整文档...
+[Phase 3: Using docgen to generate structured document]
+Generating complete document with complexity analysis...
 
-[Phase 4: 呈现结果]
-读取上下文: [AUTOMATION_MODE: false]
+[Phase 4: Presenting Results]
+Reading context: [AUTOMATION_MODE: false]
 
-深度分析文档已生成！
+Deep analysis document has been generated!
 
-文档统计：
-- 字数：4,200
-- 章节数：7
-- Mermaid 图表：4
-- 代码示例：10
-- 复杂度分析：8 个函数
+Document Statistics:
+- Word count: 4,200
+- Section count: 7
+- Mermaid diagrams: 4
+- Code examples: 10
+- Complexity analysis: 8 functions
 
-关键发现：
-- 训练循环存在 O(n²) 复杂度（嵌套迭代）
-- 数据预处理可优化为 O(n log n)
-- 内存使用峰值出现在批处理阶段
+Key Findings:
+- Training loop has O(n²) complexity (nested iteration)
+- Data preprocessing can be optimized to O(n log n)
+- Memory usage peak occurs during batch processing stage
 
-复杂度摘要：
-| 函数 | 时间复杂度 | 空间复杂度 | 优化潜力 |
-|------|-----------|-----------|---------|
-| train_epoch() | O(n²) | O(n) | 高 - 可降至 O(n log n) |
-| validate() | O(n) | O(1) | 低 |
-| save_checkpoint() | O(n) | O(n) | 中 |
+Complexity Summary:
+| Function | Time Complexity | Space Complexity | Optimization Potential |
+|----------|----------------|------------------|----------------------|
+| train_epoch() | O(n²) | O(n) | High - Can reduce to O(n log n) |
+| validate() | O(n) | O(1) | Low |
+| save_checkpoint() | O(n) | O(n) | Medium |
 
-已保存至：docs/analysis/model_training_analysis_20251021.md
+Saved to: docs/analysis/model_training_analysis_20251021.md
 
-[Interactive Mode] 是否需要进一步优化建议？
+[Interactive Mode] Do you need further optimization recommendations?
 ```
 
 ### Scenario 2: Performance Bottleneck Analysis
 
-**User:** "分析性能瓶颈并生成报告，profiling 数据在 logs/profile.txt，需要复杂度分析"
+**User:** "Analyze performance bottlenecks and generate a report, profiling data is in logs/profile.txt, need complexity analysis"
 
 **Main Claude:**
 ```
-好的，我将分析性能瓶颈并评估复杂度。
+Okay, I will analyze performance bottlenecks and assess complexity.
 
-[Phase 1: 收集上下文]
-- profiling 数据：logs/profile.txt
-- 热点代码：[自动识别的源文件]
+[Phase 1: Gathering Context]
+- Profiling data: logs/profile.txt
+- Hotspot code: [Auto-identified source files]
 
-[Phase 2: clink → Gemini CLI 分析]
-分析 profiling 数据和对应代码...
-- 识别热点函数
-- 计算理论复杂度
-- 对比实际性能
+[Phase 2: clink → Gemini CLI Analysis]
+Analyzing profiling data and corresponding code...
+- Identifying hotspot functions
+- Calculating theoretical complexity
+- Comparing with actual performance
 
-[Phase 3: docgen 生成结构化报告]
-生成性能分析报告（含复杂度评估）...
+[Phase 3: docgen Generating Structured Report]
+Generating performance analysis report (with complexity assessment)...
 
-[Phase 4: 结果呈现]
-性能瓶颈分析报告已完成！
+[Phase 4: Result Presentation]
+Performance bottleneck analysis report is complete!
 
-Top 3 瓶颈：
-1. data_loader.load_batch() - O(n²) 实际，应为 O(n)
-   → 根因：重复文件读取
-   → 优化后预期：10x 性能提升
+Top 3 Bottlenecks:
+1. data_loader.load_batch() - O(n²) actual, should be O(n)
+   → Root cause: Repeated file reads
+   → Expected improvement after optimization: 10x performance gain
 
-2. feature_extractor.transform() - O(n log n) 已优化
-   → 无明显优化空间
+2. feature_extractor.transform() - O(n log n) already optimized
+   → No significant optimization potential
 
-3. model.predict_batch() - O(n) 理论，实际 O(n²)
-   → 根因：隐式的嵌套循环
-   → 优化后预期：5x 性能提升
+3. model.predict_batch() - O(n) theoretical, actually O(n²)
+   → Root cause: Implicit nested loops
+   → Expected improvement after optimization: 5x performance gain
 
-已保存至：docs/analysis/performance_bottleneck_20251021.md
+Saved to: docs/analysis/performance_bottleneck_20251021.md
 ```
 
 ### Scenario 3: Architecture Deep Dive with Complexity Evaluation
 
-**User:** "使用gemini生成整个数据处理流程的架构分析文档，评估设计复杂度"
+**User:** "Use gemini to generate an architecture analysis document for the entire data processing flow, assess design complexity"
 
 **Main Claude:**
 ```
-我将为数据处理流程生成架构分析文档，包括复杂度评估。
+I will generate an architecture analysis document for the data processing flow, including complexity assessment.
 
-[Phase 1: 定义范围]
-- 数据处理相关模块：[列出模块]
-- 分析重点：组件交互、数据流、设计复杂度
+[Phase 1: Defining Scope]
+- Data processing related modules: [List modules]
+- Analysis focus: Component interaction, data flow, design complexity
 
-[Phase 2: clink → Gemini CLI 架构分析]
-执行架构级别分析...
-- 组件依赖关系
-- 数据流路径复杂度
-- 交互模式评估
+[Phase 2: clink → Gemini CLI Architecture Analysis]
+Executing architecture-level analysis...
+- Component dependencies
+- Data flow path complexity
+- Interaction pattern assessment
 
-[Phase 3: docgen 生成架构文档]
-生成结构化架构文档...
+[Phase 3: docgen Generating Architecture Document]
+Generating structured architecture document...
 
-[Phase 4: 结果]
-架构分析文档已生成！
+[Phase 4: Results]
+Architecture analysis document has been generated!
 
-架构复杂度评估：
-- 组件耦合度：中等（6/10）
-- 数据流复杂度：O(n) - 线性流水线
-- 最深调用栈：5 层
-- 循环依赖：0（良好）
+Architecture Complexity Assessment:
+- Component coupling: Medium (6/10)
+- Data flow complexity: O(n) - Linear pipeline
+- Deepest call stack: 5 levels
+- Circular dependencies: 0 (Good)
 
-关键架构发现：
-- 采用管道模式，复杂度控制良好
-- 建议引入缓存层降低 I/O 复杂度
-- 异步处理可将吞吐量提升 3x
+Key Architecture Findings:
+- Pipeline pattern adopted, complexity well controlled
+- Suggest introducing cache layer to reduce I/O complexity
+- Asynchronous processing can improve throughput by 3x
 
-文档包含：
-- 高层架构图（Mermaid）
-- 数据流图（Mermaid）
-- 时序图（Mermaid）
-- 复杂度分析表
-- 优化建议路线图
+Document Contains:
+- High-level architecture diagram (Mermaid)
+- Data flow diagram (Mermaid)
+- Sequence diagram (Mermaid)
+- Complexity analysis table
+- Optimization recommendation roadmap
 
-已保存至：docs/analysis/architecture_analysis_20251021.md
+Saved to: docs/analysis/architecture_analysis_20251021.md
 ```
 
 ## Collaboration Guidelines
@@ -878,16 +829,7 @@ Top 3 瓶颈：
 - **Compatibility**: Works with CLAUDE.md standards for documentation quality
 - **WSL Integration**: clink serves as the bridge between Main Claude and gemini CLI in WSL; docgen operates in Zen MCP environment
 - **Tool Separation**: clink = analysis bridge, docgen = document generation workflow - each has distinct responsibilities
-- **🚨 CRITICAL - automation_mode Management**:
-  - **Three-Layer Architecture**: This skill follows the global automation_mode architecture
-  - **Router (Layer 1)**: Only main-router judges and sets `automation_mode` based on user's initial request
-  - **Transmission (Layer 2)**: Router passes automation_mode to this skill via context `[AUTOMATION_MODE: true/false]`
-  - **Skill (Layer 3 - READ ONLY)**: This skill ONLY reads automation_mode, never judges or modifies it
-  - **❌ FORBIDDEN**: Do NOT ask user "是否需要自动化执行?" or check for automation keywords
-  - **Automated Mode (automation_mode=true)**: All decisions (document approval, save) auto-approved and logged via output sections (see auto_log mechanism below)
-- **CRITICAL - auto_log.md Generation Mechanism**:
-  - This skill **DOES NOT** directly write to `auto_log.md` file
-  - In automation_mode=true, outputs `[自动保存决策记录]` sections with decision type, rationale, confidence, and standards met
-  - main-router collects all decision records at task completion and uses simple-gemini to generate unified `auto_log.md`
-  - File location: Project root directory `auto_log.md` (runtime audit log, not version controlled)
-  - See `references/auto_log_template.md` for complete log structure and examples
+- **automation_mode & auto_log (READ FROM SSOT)**:
+  - Definitions and constraints: See CLAUDE.md「📚 共享概念速查」
+  - This skill: Skill Layer (read-only), outputs `[Automated Save Decision Record]` fragments when automation_mode=true
+  - auto_log template: See `skills/shared/auto_log_template.md`

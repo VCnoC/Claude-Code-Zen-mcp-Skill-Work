@@ -1,6 +1,6 @@
 ---
 name: simple-gemini
-description: Collaborative documentation and test code writing workflow using zen mcp's clink to launch gemini CLI session in WSL (via 'gemini' command) where all writing operations are executed. Use this skill when the user requests "使用gemini来编写测试文件", "使用gemini来编写文档", "生成相关测试文件", "生成一份解释文档", or similar document/test writing tasks. The gemini CLI session acts as the specialist writer, working with the main Claude model for context gathering, outline approval, and final review. For test code, codex CLI (also launched via clink) validates quality after gemini completes writing.
+description: Collaborative documentation and test code writing workflow using zen mcp's clink to launch gemini CLI session in WSL (via 'gemini' command) where all writing operations are executed. Use this skill when the user requests "use gemini to write test files", "use gemini to write documentation", "generate related test files", "generate an explanatory document", or similar document/test writing tasks. The gemini CLI session acts as the specialist writer, working with the main Claude model for context gathering, outline approval, and final review. For test code, codex CLI (also launched via clink) validates quality after gemini completes writing.
 ---
 
 # Gemini Documentation & Test Writer
@@ -24,75 +24,26 @@ This skill provides a collaborative writing workflow where gemini CLI (launched 
 ## When to Use This Skill
 
 Trigger this skill when the user or main model requests:
-- "使用gemini来编写测试文件"
-- "使用gemini来编写文档"
-- "生成相关测试文件"
-- "生成一份解释文档"
+- "Use gemini to write test files"
+- "Use gemini to write documentation"
+- "Generate related test files"
+- "Generate an explanatory document"
 - Commands from Claude or codex to write documentation
 - Any request to create .md documentation or test code files
 
-## Operation Mode (Based on Router's automation_mode)
+## Operation Mode (automation_mode - READ FROM SSOT)
 
-**🚨 CRITICAL**: This skill **MUST read** the `automation_mode` status from the context set by main-router. **DO NOT** ask the user about automation preference or check for trigger phrases - this is handled exclusively by the router.
+automation_mode definition and constraints: See CLAUDE.md「📚 共享概念速查」
 
-This skill supports two operation modes based on the `automation_mode` state:
+**This skill's role**: Skill Layer (read-only), read from context `[AUTOMATION_MODE: true/false]`
+- `false` → Interactive: Requires user confirmation (outline, review, test corrections)
+- `true` → Automated: Autonomous decisions, escalate only for critical issues, record to auto_log.md
 
-### 1. Interactive Mode (automation_mode=false, Default)
+### Coverage Target Management (READ ONLY - G9 Compliance)
 
-**Triggered When:** Router sets `automation_mode=false` (default)
+coverage_target definition and constraints: See CLAUDE.md「📚 共享概念速查」
 
-**User Approval Required:**
-- Outline approval before full document writing
-- Final document review before saving
-- Test code correction approval
-- All major decisions require user confirmation
-
-**When to Use:**
-- User wants control over the process
-- Important or sensitive documents
-- First-time document generation
-- Learning and understanding the workflow
-
-### 2. Automated Mode (automation_mode=true)
-
-**Triggered When:** Router detects automation keywords in initial request and sets `automation_mode=true`
-
-**Main Claude Makes Decisions:**
-- Main Claude reviews and approves outlines autonomously
-- Main Claude validates final documents against standards
-- Main Claude approves test code corrections automatically
-- Only final results are presented to user for information
-- **All decisions are logged to auto_log.md**
-
-**Main Claude's Autonomous Decision Criteria:**
-- **Outline**: Check completeness, structure alignment with templates
-- **Document**: Verify adherence to standards (CLAUDE.md)
-- **Test Code**: Ensure quality meets requirements (coverage ≥ 70%)
-- **Only escalate to user** if critical issues or ambiguities are detected
-
-### Mode Detection (READ ONLY - Three-Layer Architecture)
-
-**Layer 1: Router (Global Truth Source)**
-- Only the main-router judges and sets `automation_mode` based on initial request
-- Status is set once at task start and remains unchanged throughout lifecycle
-
-**Layer 2: Transmission**
-- Router passes `automation_mode` status to this skill via context
-- Format: `[AUTOMATION_MODE: true]` or `[AUTOMATION_MODE: false]`
-
-**Layer 3: Skill (READ ONLY - This Skill)**
-
-**✅ MUST DO:**
-- Read `automation_mode` from context passed by router
-- Adjust behavior based on the status:
-  - `automation_mode=true` → Auto-approve all decisions, log to auto_log.md
-  - `automation_mode=false` → Interactive confirmation required
-
-**❌ ABSOLUTELY FORBIDDEN:**
-- ❌ Ask user "是否需要自动化执行？"
-- ❌ Check user's initial request for automation keywords
-- ❌ Modify the automation_mode status set by router
-- ❌ Re-detect automation triggers during execution
+**This skill's role**: Skill Layer (read-only), read from context `[COVERAGE_TARGET: X%]`, use when generating/evaluating test code (default 85% if missing)
 
 ## Workflow Decision Tree
 
@@ -125,8 +76,8 @@ User Request
 
 3. **Identify Document Requirements:**
    - For CLAUDE.md mandated documents (PROJECTWIKI.md, CHANGELOG.md, ADRs):
-     - Apply standards from `references/doc_templates.md`
-     - Follow CLAUDE.md 项目知识库内容结构与生成规则统一模板
+     - Apply standards from `references/doc_templates/README.md` (on-demand template loading)
+     - Follow CLAUDE.md Project Knowledge Base Content Structure and Generation Rules Unified Template
    - For other documents:
      - Determine appropriate structure
      - Identify key sections needed
@@ -165,24 +116,20 @@ Parameters:
 
 **Main Claude's Responsibility:**
 
-**🚨 First: Read automation_mode from context**
-```
-IF [AUTOMATION_MODE: false] → Interactive Mode
-IF [AUTOMATION_MODE: true] → Automated Mode
-```
+** automation_mode check**: `[AUTOMATION_MODE: false]` → Interactive / `true` → Automated
 
 #### Interactive Mode (automation_mode=false, Default)
 
 1. **Present Outline to User:**
    ```
-   Gemini CLI 已生成文档大纲：
+   Gemini CLI has generated document outline:
 
-   [显示大纲]
+   [Show outline]
 
-   是否批准此大纲？
-   - 是：继续编写
-   - 否：请提供修改意见
-   - 修改：[具体修改建议]
+   Do you approve this outline?
+   - Yes: Continue writing
+   - No: Please provide modification suggestions
+   - Modify: [Specific modification suggestions]
    ```
 
 2. **Wait for User Approval** - Do NOT proceed without confirmation
@@ -197,31 +144,20 @@ IF [AUTOMATION_MODE: true] → Automated Mode
    - Check scope: Covers all identified needs?
    - Check standards: Aligns with CLAUDE.md?
 
-2. **Decision Logic (based on automation_mode=true from router):**
-   ```
-   IF outline is complete AND well-structured AND meets standards:
-       → Auto-approve, proceed to Phase 4
-       → Log to auto_log.md: "大纲已自动审批通过 (automation_mode=true)"
-       → Record: decision reason, confidence, standards met
-   ELSE:
-       → Provide feedback to Gemini CLI, regenerate outline
-       → Retry up to 2 times
-       → Log each retry to auto_log.md
-       → If still not meeting standards, escalate to user
-   ```
+2. **Auto-Decision**: Meets standards → auto-approve + log; Else → retry (max 2×) + log, escalate if failed
 
 3. **Present Decision to User (Information Only):**
    ```
-   ✅ 大纲已自动审批（自动化模式）
+    Outline auto-approved (automated mode)
 
-   [显示大纲摘要]
+   [Show outline summary]
 
-   审批原因：
-   - ✅ 结构完整
-   - ✅ 符合模板要求
-   - ✅ 覆盖所有需求
+   Approval reasons:
+   - Structure complete
+   - Meets template requirements
+   - Covers all requirements
 
-   继续编写完整文档...
+   Continuing to write complete document...
    ```
 
 ### Phase 4: Document Writing (Gemini CLI Session)
@@ -237,7 +173,7 @@ Parameters:
 
           Writing Guidelines:
           - Follow the outline structure exactly
-          - For PROJECTWIKI.md/CHANGELOG.md/ADR: strictly follow templates in references/doc_templates.md
+          - For PROJECTWIKI.md/CHANGELOG.md/ADR: strictly follow templates in references/doc_templates/README.md (load specific templates as needed)
           - Use Mermaid diagrams where appropriate (```mermaid blocks)
           - Write in clear, professional Chinese (or English if specified)
           - Include code examples where helpful
@@ -262,27 +198,23 @@ Parameters:
 
 **Main Claude's Responsibility:**
 
-**🚨 First: Read automation_mode from context**
-```
-IF [AUTOMATION_MODE: false] → Interactive Mode
-IF [AUTOMATION_MODE: true] → Automated Mode
-```
+** automation_mode check**: `[AUTOMATION_MODE: false]` → Interactive / `true` → Automated
 
 #### Interactive Mode (automation_mode=false, Default)
 
 1. **Present Document:**
    ```
-   Gemini CLI 已完成文档编写：
+   Gemini CLI has completed document writing:
 
-   文档类型：[type]
-   文件路径：[proposed path]
+   Document type: [type]
+   File path: [proposed path]
 
-   [显示文档内容或摘要]
+   [Show document content or summary]
 
-   请审核此文档：
-   - ✅ 批准并保存
-   - 🔄 需要修改：[请说明修改内容]
-   - ❌ 重新生成
+   Please review this document:
+   - Approve and save
+   - 🔄 Needs modification: [Please specify modification content]
+   - Regenerate
    ```
 
 2. **Handle Feedback:**
@@ -298,43 +230,31 @@ IF [AUTOMATION_MODE: true] → Automated Mode
 #### Automated Mode (automation_mode=true)
 
 1. **Main Claude Validates Document Autonomously (based on automation_mode=true):**
-   - **For PROJECTWIKI/CHANGELOG/ADR**: Check against `references/doc_templates.md`
+   - **For PROJECTWIKI/CHANGELOG/ADR**: Check against `references/doc_templates/README.md` (load specific templates for validation)
      - All required sections present?
      - Mermaid diagrams included?
      - Links are valid?
      - Consistent with CLAUDE.md standards?
    - **For other documents**: Check completeness, clarity, and consistency
 
-2. **Decision Logic (based on automation_mode=true from router):**
-   ```
-   IF document meets all quality standards:
-       → Auto-approve and save
-       → Update CHANGELOG.md if needed
-       → Log to auto_log.md: "文档已自动审批并保存 (automation_mode=true)"
-       → Record: validation checklist, quality metrics, decision reason
-   ELSE:
-       → Provide feedback to Gemini CLI for revision
-       → Retry up to 2 times
-       → Log each retry and reason to auto_log.md
-       → If still not meeting standards, escalate to user
-   ```
+2. **Auto-Decision**: Meets quality → auto-approve + save + update CHANGELOG + log; Else → retry (max 2×) + log, escalate if failed
 
 3. **Present Final Result to User (Information Only):**
    ```
-   ✅ 文档已自动完成并保存（自动化模式）
+    Document auto-completed and saved (automated mode)
 
-   文档类型：[type]
-   文件路径：[actual path]
+   Document type: [type]
+   File path: [actual path]
 
-   质量检查：
-   - ✅ 结构完整
-   - ✅ 符合标准
-   - ✅ 格式正确
-   - ✅ 链接有效
+   Quality checks:
+   - Structure complete
+   - Meets standards
+   - Format correct
+   - Links valid
 
-   [显示文档摘要或关键章节]
+   [Show document summary or key sections]
 
-   已自动更新 CHANGELOG.md
+   CHANGELOG.md automatically updated
    ```
 
 ## Test Code Writing Workflow
@@ -347,7 +267,7 @@ IF [AUTOMATION_MODE: true] → Automated Mode
    - What code/module needs testing?
    - Test type: unit, integration, or E2E?
    - Testing framework: pytest, unittest, jest, etc.?
-   - Coverage requirements (default ≥ 70%)
+   - Coverage requirements: Read from context `[COVERAGE_TARGET: X%]` (default 85% if missing)
 
 2. **Gather Context:**
    - Read the code to be tested
@@ -377,7 +297,7 @@ Parameters:
           Test Requirements:
           - Framework: [pytest/unittest/etc.]
           - Test types: [unit/integration/E2E]
-          - Coverage target: ≥ 70%
+          - Coverage target: ≥ {coverage_target from context, e.g., 85%}
           - Include: normal cases, edge cases, error handling, boundary conditions
 
           Standards:
@@ -436,25 +356,21 @@ Parameters:
 
 **If Codex CLI Identifies Issues:**
 
-**🚨 First: Read automation_mode from context**
-```
-IF [AUTOMATION_MODE: false] → Interactive Mode
-IF [AUTOMATION_MODE: true] → Automated Mode
-```
+** automation_mode check**: `[AUTOMATION_MODE: false]` → Interactive / `true` → Automated
 
 #### Interactive Mode (automation_mode=false, Default)
 
 Main Claude presents findings to user:
 ```
-Codex CLI 检查发现以下问题：
+Codex CLI check found the following issues:
 
-[严重] 测试文件A:行B - 缺少边界条件测试
-[中等] 测试文件A:行C - 断言不够具体
+[Critical] Test file A:line B - Missing boundary condition tests
+[Medium] Test file A:line C - Assertions not specific enough
 ...
 
-是否批准 Codex CLI 自动修正这些问题？
-- 是：继续修正
-- 否：手动修改
+Do you approve Codex CLI auto-correcting these issues?
+- Yes: Continue corrections
+- No: Manual modification
 ```
 
 After approval, codex CLI applies corrections (following codex-code-reviewer workflow).
@@ -468,42 +384,29 @@ Main Claude reviews issues and decides autonomously (based on automation_mode=tr
    - Medium severity: Fix if straightforward
    - Low severity: Fix if no risk
 
-2. **Decision Logic (based on automation_mode=true from router):**
-   ```
-   IF issues are fixable AND low risk:
-       → Auto-approve codex corrections
-       → Log to auto_log.md: "测试代码问题已自动修正 (automation_mode=true)"
-       → Record: issue list, fix decisions, severity levels, risk assessment
-   ELSE IF issues are complex or high risk:
-       → Escalate to user for decision
-       → Log escalation reason to auto_log.md
-   ```
+2. **Auto-Decision**: Fixable + low risk → auto-approve + log; Complex/high-risk → escalate + log
 
 3. **Present Decision to User (Information Only):**
    ```
-   ✅ 测试代码问题已自动修正（自动化模式）
-   [automation_mode=true 由 router 设置]
+    Test code issues auto-corrected (automated mode)
+   [automation_mode=true set by router]
 
-   修正的问题：
-   - ✅ [严重] 已添加边界条件测试
-   - ✅ [中等] 已完善断言说明
-   - ✅ [低] 已优化测试命名
+   Corrected issues:
+   - [Critical] Added boundary condition tests
+   - [Medium] Enhanced assertion descriptions
+   - [Low] Optimized test naming
 
-   决策依据：automation_mode=true，所有问题可安全修复
-   已记录到 auto_log.md
+   Decision basis: automation_mode=true, all issues safely fixable
+   Recorded to auto_log.md
 
-   继续运行测试...
+   Continuing to run tests...
    ```
 
 ### Phase 5: Test Execution & Review (Main Claude + User)
 
 **Main Claude's Responsibility:**
 
-**🚨 First: Read automation_mode from context**
-```
-IF [AUTOMATION_MODE: false] → Interactive Mode
-IF [AUTOMATION_MODE: true] → Automated Mode
-```
+** automation_mode check**: `[AUTOMATION_MODE: false]` → Interactive / `true` → Automated
 
 1. **Execute Tests:**
    - Run the test suite using appropriate commands
@@ -514,23 +417,23 @@ IF [AUTOMATION_MODE: true] → Automated Mode
 
 2. **Present Results to User:**
    ```
-   Gemini CLI 已完成测试代码编写，Codex CLI 已验证质量。
+   Gemini CLI has completed test code writing, Codex CLI has verified quality.
 
-   测试文件：[file paths]
-   覆盖率：[percentage]
+   Test files: [file paths]
+   Coverage: [percentage]
 
-   测试运行结果：
+   Test run results:
 
-   ✅ 通过：X 个
-   ❌ 失败：Y 个
-   ⚠️  跳过：Z 个
+    Passed: X tests
+    Failed: Y tests
+     Skipped: Z tests
 
-   [详细结果]
+   [Detailed results]
 
-   是否满意？需要调整吗？
-   - ✅ 批准并保存
-   - 🔄 需要调整
-   - ❌ 重新生成
+   Are you satisfied? Need adjustments?
+   - Approve and save
+   - 🔄 Needs adjustment
+   - Regenerate
    ```
 
 3. **Iterate if Needed:**
@@ -542,40 +445,28 @@ IF [AUTOMATION_MODE: true] → Automated Mode
 2. **Main Claude Evaluates Test Results Autonomously (based on automation_mode=true):**
    - **Success Criteria:**
      - All tests pass (or only expected skips)
-     - Coverage ≥ 70%
+     - Coverage ≥ coverage_target (read from context via `[COVERAGE_TARGET: X%]`, default 85%)
      - No critical failures
 
-3. **Decision Logic (based on automation_mode=true from router):**
-   ```
-   IF all tests pass AND coverage >= 70%:
-       → Auto-approve and save test files
-       → Log to auto_log.md: "测试已自动完成并保存 (automation_mode=true)"
-       → Record: test results, coverage metrics, decision reason
-   ELSE IF some tests fail:
-       → Analyze failure reasons
-       → If fixable: Provide feedback to Gemini/Codex, retry (max 2 times)
-       → Log retry attempts and reasons to auto_log.md
-       → If source code bugs: Report to user, save tests anyway, log findings
-       → If persistent test issues: Escalate to user, log escalation reason
-   ```
+3. **Auto-Decision**: Pass + coverage ≥ target → auto-save + log; Fail → analyze: fixable → retry (max 2×), source bugs → report + save, persistent → escalate
 
 4. **Present Final Result to User (Information Only):**
    ```
-   ✅ 测试已自动完成（自动化模式）
+    Tests auto-completed (automated mode)
 
-   测试文件：[file paths]
+   Test files: [file paths]
 
-   测试运行结果：
-   - ✅ 通过：X 个 (100%)
-   - 覆盖率：78%
+   Test run results:
+   - Passed: X tests (100%)
+   - Coverage: 78%
 
-   质量检查：
-   - ✅ 所有测试通过
-   - ✅ 覆盖率达标（≥ 70%）
-   - ✅ 测试结构清晰
-   - ✅ 断言完整
+   Quality checks:
+   - All tests passed
+   - Coverage met target (≥ coverage_target, e.g. 85%)
+   - Test structure clear
+   - Assertions complete
 
-   测试文件已保存
+   Test files saved
    ```
 
 ## Collaboration Guidelines
@@ -608,18 +499,20 @@ IF [AUTOMATION_MODE: true] → Automated Mode
 
 ### CLAUDE.md Mandated Documents
 
-For these documents, **strictly follow** templates in `references/doc_templates.md`:
+For these documents, **strictly follow** templates in `references/doc_templates/README.md` (on-demand template loading):
 
 1. **PROJECTWIKI.md**
-   - Follow 项目知识库内容结构与生成规则统一模板
+   - Follow Project Knowledge Base Content Structure and Generation Rules Unified Template
    - Include all 12 required sections
    - Use Mermaid diagrams
    - Ensure traceability links
+   - Template: `projectwiki_template.md`
 
 2. **CHANGELOG.md**
    - Follow Keep a Changelog format
    - Semantic Versioning
    - Link to commits and PRs
+   - Template: `changelog_template.md`
 
 3. **ADR (Architecture Decision Records)**
    - Use MADR template
@@ -631,7 +524,7 @@ For these documents, **strictly follow** templates in `references/doc_templates.
    - Checkable task list
    - Review section for summary
 
-See `references/doc_templates.md` for complete templates.
+See `references/doc_templates/README.md` for template index, then load specific templates as needed.
 
 ### Other Documents
 
@@ -651,7 +544,7 @@ Follow patterns from `references/test_patterns.md`:
    - Clear, descriptive test names
 
 2. **Coverage Requirements:**
-   - Minimum 70% line coverage
+   - Target: coverage_target from context (default 85%, minimum 70%)
    - Test all public APIs
    - Cover edge cases and error conditions
 
@@ -737,12 +630,16 @@ Key parameters for test validation:
 
 ## Resources
 
-### references/doc_templates.md
+### references/doc_templates/README.md
 
-Complete templates for CLAUDE.md mandated documents. Load when:
+Document templates index and on-demand loading guide. Load this reference when:
 - Writing PROJECTWIKI.md, CHANGELOG.md, ADR, or plan.md
-- User asks about document structure standards
 - Need to verify format compliance
+
+Then load specific template files as needed:
+- `projectwiki_template.md` - PROJECTWIKI.md 标准模板
+- `changelog_template.md` - CHANGELOG.md 标准模板
+- `readme_template.md`, `api_doc_template.md`, etc.
 
 ### references/test_patterns.md
 
@@ -755,219 +652,219 @@ Testing best practices and code patterns. Load when:
 
 ### Example 1: Writing ADR (Interactive Mode)
 
-**User**: "使用gemini来编写文档，我需要记录数据库选择决策的ADR"
+**User**: "Use gemini to write documentation, I need to record the database selection decision ADR"
 
 **Main Claude**:
 ```
-好的,我来协调 Gemini CLI 为您编写 ADR 文档。
+OK, I'll coordinate Gemini CLI to write the ADR document for you.
 
-首先让我了解一些信息：
-1. 数据库选择的背景是什么？
-2. 考虑了哪些数据库选项？
-3. 最终选择了哪个数据库？
-4. 主要决策因素是什么？
+First let me understand some information:
+1. What is the background of the database selection?
+2. What database options were considered?
+3. Which database was ultimately chosen?
+4. What were the main decision factors?
 
-[收集信息后...]
+[After collecting information...]
 
-现在让 Gemini CLI 生成 ADR 大纲...
-[调用 mcp__zen__clink with cli_name="gemini"]
+Now let Gemini CLI generate ADR outline...
+[Call mcp__zen__clink with cli_name="gemini"]
 
-Gemini CLI 生成的大纲如下：
-[显示大纲]
+Gemini CLI generated outline as follows:
+[Display outline]
 
-是否批准？
+Approve?
 ```
 
-**User**: "是"
+**User**: "Yes"
 
 **Main Claude**:
 ```
-[调用 mcp__zen__clink 完整编写，使用 continuation_id]
+[Call mcp__zen__clink for complete writing, using continuation_id]
 
-Gemini CLI 已完成 ADR 编写：
+Gemini CLI has completed ADR writing:
 
-文件：docs/adr/20251020-select-postgresql.md
+File: docs/adr/20251020-select-postgresql.md
 
-[显示内容]
+[Display content]
 
-是否批准保存？
+Approve to save?
 ```
 
 ### Example 2: Writing Test Code (Interactive Mode)
 
-**User**: "使用gemini来编写测试文件，测试 src/features.py"
+**User**: "Use gemini to write test file, test src/features.py"
 
 **Main Claude**:
 ```
-好的，让我先分析 src/features.py 的代码...
+OK, let me first analyze the code in src/features.py...
 
-[读取代码]
+[Read code]
 
-发现需要测试的关键函数：
+Found key functions that need testing:
 - create_features()
 - validate_data()
 - transform_features()
 
-测试框架：pytest
-目标覆盖率：≥ 70%
+Test framework: pytest
+Target coverage: ≥ {coverage_target from context, e.g., 85%}
 
-现在让 Gemini CLI 编写测试代码...
-[调用 mcp__zen__clink with cli_name="gemini"]
+Now let Gemini CLI write test code...
+[Call mcp__zen__clink with cli_name="gemini"]
 
-测试代码已生成。现在让 Codex CLI 验证质量...
-[调用 mcp__zen__codereview with model="codex"]
+Test code has been generated. Now let Codex CLI verify quality...
+[Call mcp__zen__codereview with model="codex"]
 
-Codex CLI 检查结果：
-✅ 测试覆盖完整
-✅ 断言清晰
-⚠️ 建议增加边界条件测试
+Codex CLI check results:
+✅ Complete test coverage
+✅ Clear assertions
+⚠️ Suggest adding boundary condition tests
 
-是否批准 Codex CLI 自动补充边界条件测试？
+Do you approve Codex CLI to automatically add boundary condition tests?
 ```
 
-**User**: "是"
+**User**: "Yes"
 
 **Main Claude**:
 ```
-[Codex CLI 修正]
+[Codex CLI corrections applied]
 
-测试代码已完善。现在运行测试...
-[执行测试]
+Test code has been improved. Now running tests...
+[Executing tests]
 
-测试结果：
-✅ 所有测试通过
-覆盖率：78%
+Test results:
+✅ All tests passed
+Coverage: 78%
 
-测试文件已保存：tests/test_features.py
+Test file saved: tests/test_features.py
 ```
 
 ### Example 3: Writing ADR (Automated Mode)
 
-**User**: "使用gemini来编写文档，记录数据库选择决策的ADR。自动化执行，不需要我确认"
+**User**: "Use gemini to write documentation, record the database selection decision ADR. Automated execution, no confirmation needed"
 
-**Router**: Sets `automation_mode=true` (detects "自动化执行，不需要我确认")
+**Router**: Sets `automation_mode=true` (detects "Automated execution, no confirmation needed")
 
 **Main Claude** (reads automation_mode=true from context):
 ```
-[automation_mode=true] 检测到自动化模式，将自主审批并完成文档。
+[automation_mode=true] Automation mode detected, will autonomously approve and complete the document.
 
-首先让我了解一些信息：
-1. 数据库选择的背景是什么？
-2. 考虑了哪些数据库选项？
-3. 最终选择了哪个数据库？
-4. 主要决策因素是什么？
+First, let me understand some information:
+1. What is the background of the database selection?
+2. What database options were considered?
+3. What database was finally selected?
+4. What were the main decision factors?
 
-[收集信息后...]
+[After collecting information...]
 
-正在生成 ADR 大纲...
-[调用 mcp__zen__clink with cli_name="gemini"]
+Generating ADR outline...
+[Calling mcp__zen__clink with cli_name="gemini"]
 
-✅ 大纲已自动审批（自动化模式）
+✅ Outline automatically approved (automation mode)
 
-大纲摘要：
-1. 背景与问题陈述
-2. 决策驱动因素
-3. 考虑的方案（PostgreSQL, MongoDB, MySQL）
-4. 决策结果
-5. 实施计划
-6. 验证方式
+Outline summary:
+1. Background and Problem Statement
+2. Decision Drivers
+3. Considered Options (PostgreSQL, MongoDB, MySQL)
+4. Decision Outcome
+5. Implementation Plan
+6. Validation Method
 
-审批原因：
-- ✅ 结构完整（符合 MADR 模板）
-- ✅ 覆盖所有需求
-- ✅ 符合标准
+Approval reasons:
+- Complete structure (complies with MADR template)
+- Covers all requirements
+- Meets standards
 
-继续编写完整文档...
-[调用 mcp__zen__clink with continuation_id]
+Continuing to write complete document...
+[Calling mcp__zen__clink with continuation_id]
 
-✅ 文档已自动完成并保存（自动化模式）
+✅ Document automatically completed and saved (automation mode)
 
-文档类型：ADR
-文件路径：docs/adr/20251020-select-postgresql.md
+Document type: ADR
+File path: docs/adr/20251020-select-postgresql.md
 
-质量检查：
-- ✅ 结构完整（所有 MADR 章节）
-- ✅ 符合 CLAUDE.md 标准
-- ✅ 格式正确
-- ✅ 无失效链接
+Quality check:
+- Complete structure (all MADR sections)
+- Complies with CLAUDE.md standards
+- Correct format
+- No broken links
 
-文档摘要：
-- 决策：选择 PostgreSQL
-- 理由：性能优秀、功能完整、团队有经验
-- 影响：查询性能提升 3-5 倍，需 1-2 周迁移
+Document summary:
+- Decision: Selected PostgreSQL
+- Rationale: Excellent performance, complete features, team has experience
+- Impact: Query performance improved 3-5x, requires 1-2 weeks migration
 
-已自动更新 CHANGELOG.md
+CHANGELOG.md automatically updated
 
-ADR 编写完成！
+ADR writing completed!
 ```
 
 ### Example 4: Writing Test Code (Automated Mode)
 
-**User**: "使用gemini来编写测试文件，测试 src/features.py，自动化完成"
+**User**: "Use gemini to write test file, test src/features.py, complete automatically"
 
-**Router**: Sets `automation_mode=true` (detects "自动化完成")
+**Router**: Sets `automation_mode=true` (detects "complete automatically")
 
 **Main Claude** (reads automation_mode=true from context):
 ```
-[automation_mode=true] 检测到自动化模式，将自主完成测试代码编写。
+[automation_mode=true] Automation mode detected, will autonomously complete test code writing.
 
-正在分析代码...
-[读取代码]
+Analyzing code...
+[Reading code]
 
-发现需要测试的关键函数：
+Key functions to be tested identified:
 - create_features()
 - validate_data()
 - transform_features()
 
-测试框架：pytest
-目标覆盖率：≥ 70%
+Test framework: pytest
+Target coverage: ≥ {coverage_target from context, e.g., 85%}
 
-正在生成测试代码...
-[调用 mcp__zen__clink with cli_name="gemini"]
+Generating test code...
+[Calling mcp__zen__clink with cli_name="gemini"]
 
-正在进行质量验证...
-[调用 mcp__zen__codereview with model="codex"]
+Conducting quality verification...
+[Calling mcp__zen__codereview with model="codex"]
 
-Codex CLI 发现 3 个改进点：
-- [中等] 建议增加边界条件测试
-- [低] 优化测试命名
-- [低] 增加注释说明
+Codex CLI found 3 improvement points:
+- [Medium] Suggest adding boundary condition tests
+- [Low] Optimize test naming
+- [Low] Add explanatory comments
 
-✅ 测试代码问题已自动修正（自动化模式）
+✅ Test code issues automatically corrected (automation mode)
 
-修正的问题：
-- ✅ [中等] 已添加边界条件测试（空列表、None、极值）
-- ✅ [低] 已优化测试命名（更具描述性）
-- ✅ [低] 已增加复杂逻辑的注释
+Corrected issues:
+- [Medium] Added boundary condition tests (empty list, None, extreme values)
+- [Low] Optimized test naming (more descriptive)
+- [Low] Added comments for complex logic
 
-正在运行测试...
-[执行 pytest --cov=src tests/]
+Running tests...
+[Executing pytest --cov=src tests/]
 
-✅ 测试已自动完成（自动化模式）
+✅ Testing automatically completed (automation mode)
 
-测试文件：tests/test_features.py
+Test file: tests/test_features.py
 
-测试运行结果：
-- ✅ 通过：15 个 (100%)
-- 覆盖率：82%
+Test execution results:
+- Passed: 15 tests (100%)
+- Coverage: 82%
 
-质量检查：
-- ✅ 所有测试通过
-- ✅ 覆盖率达标（≥ 70%）
-- ✅ 测试结构清晰（AAA 模式）
-- ✅ 断言完整（含错误消息）
-- ✅ Mock 使用正确
+Quality check:
+- All tests passed
+- Coverage meets target (≥ coverage_target, e.g., 85%)
+- Clear test structure (AAA pattern)
+- Complete assertions (with error messages)
+- Correct Mock usage
 
-详细结果：
-- test_create_features_normal: ✅
-- test_create_features_empty_input: ✅
-- test_create_features_none_input: ✅
-- test_validate_data_valid: ✅
-- test_validate_data_invalid: ✅
-- test_transform_features_basic: ✅
-- ... (共 15 个测试)
+Detailed results:
+- test_create_features_normal:
+- test_create_features_empty_input:
+- test_create_features_none_input:
+- test_validate_data_valid:
+- test_validate_data_invalid:
+- test_transform_features_basic:
+- ... (Total 15 tests)
 
-测试文件已保存，测试代码编写完成！
+Test file saved, test code writing completed!
 ```
 
 ## Notes
@@ -978,25 +875,15 @@ Codex CLI 发现 3 个改进点：
 - Gemini CLI session excels at understanding context and producing well-structured writing
 - Main Claude acts as orchestrator and bridge, not the actual writer
 
-**🚨 CRITICAL - automation_mode Management:**
-- **Three-Layer Architecture**: This skill follows the global automation_mode architecture
-  - **Router (Layer 1)**: Only main-router judges and sets `automation_mode` based on user's initial request
-  - **Transmission (Layer 2)**: Router passes automation_mode to this skill via context
-  - **Skill (Layer 3 - READ ONLY)**: This skill ONLY reads automation_mode, never judges or modifies it
-- **Automated Mode (automation_mode=true)**: Main Claude autonomously reviews and approves based on objective quality criteria, significantly speeding up the workflow
-  - **All decisions logged via output sections**: Every auto-approval is recorded in output (see auto_log mechanism below)
-  - Triggered when router sets automation_mode=true (detects keywords like "自动化" / "全自动" / "不需要确认")
-- **Interactive Mode (automation_mode=false, Default)**: User approval gates ensure quality and alignment, suitable for important or sensitive tasks
-- **Mode Detection**: This skill MUST read automation_mode from context, NEVER ask user or check for keywords
-- **Status Consistency**: All behavior must align with the automation_mode status set by router
+** CRITICAL - automation_mode & auto_log Management:**
+- automation_mode: See CLAUDE.md「📚 共享概念速查」and G11 Three-Layer Architecture
+- This skill: Skill Layer (read-only), follows router-set automation_mode, logs all auto-decisions
 
-**CRITICAL - auto_log.md Generation Mechanism:**
-- This skill **DOES NOT** directly write to `auto_log.md` file
-- In automation_mode=true, outputs decision records in structured format within the response text
-- main-router collects all decision records at task completion and uses simple-gemini itself to generate unified `auto_log.md`
-- File location: Project root directory `auto_log.md` (runtime audit log, not version controlled)
-- Output format: Include decision type, rationale, confidence, and standards met in structured sections
-- See `references/auto_log_template.md` for complete log structure and examples
+**CRITICAL - auto_log.md Generation (auto_log - READ FROM SSOT):**
+
+auto_log mechanism and template: See CLAUDE.md「📚 共享概念速查」and `skills/shared/auto_log_template.md`
+
+**This skill's role**: Generate complete auto_log.md from router-collected fragments (when automation_mode=true and task complete)
 
 - Codex CLI session (also in WSL) ensures test code meets engineering standards
 - This workflow separates concerns:
