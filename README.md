@@ -112,6 +112,14 @@ Copy-Item -Path ".\references" -Destination "$env:USERPROFILE\.claude\references
 Copy-Item -Path ".\CLAUDE.md" -Destination "$env:USERPROFILE\.claude\CLAUDE.md"
 ```
 
+**手动安装核心步骤总结**：
+1. 复制 `zen-mcp-server/` 到用户目录并安装依赖
+2. 创建 `~/.claude/` 目录结构（如不存在）
+3. 复制 `skills/` 下的所有技能文件到 `~/.claude/skills/`
+4. 复制 `references/` 文件夹到 `~/.claude/references/`
+5. 复制 `CLAUDE.md` 到 `~/.claude/CLAUDE.md`
+
+> **📁 最终目录结构**：`~/.claude/` 包含 `skills/`、`references/` 和 `CLAUDE.md` 三个核心组件
 ### 3. 配置与启动
 
 **第一步：配置 API Keys**
