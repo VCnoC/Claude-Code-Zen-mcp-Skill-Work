@@ -130,12 +130,19 @@ Copy-Item -Path ".\CLAUDE.md" -Destination "$env:USERPROFILE\.claude\CLAUDE.md"
 # OpenAI API Key (用于代码审查等)
 OPENAI_API_KEY=sk-your-openai-api-key-here
 
-# Google Gemini API Key (用于文档生成等)
+# Google Gemini API Key (支持原生格式和 OpenAI 兼容格式)
 GEMINI_API_KEY=your-gemini-api-key-here
 
 # ⚠️ 强烈建议：指定允许的模型，避免意外高额费用
 OPENAI_ALLOWED_MODELS=gpt-4-turbo,gpt-4o
+
+# 可选：使用自定义 API 端点（Ollama、vLLM、LM Studio 等本地模型）
+# CUSTOM_API_URL=http://localhost:11434/v1   # API 端点（必须以 /v1 结尾）
+# CUSTOM_API_KEY=                            # API 密钥（Ollama 留空）
+# CUSTOM_MODEL_NAME=llama3.2                 # 默认模型名称
 ```
+
+> **💡 使用本地模型**：如需使用 Ollama、vLLM 或 LM Studio 等本地推理服务，配置上述 `CUSTOM_API_*` 参数即可。若需自定义模型能力（扩展推理、视觉等），可在 `zen-mcp-server/conf/custom_models.json` 中添加模型配置。
 
 **第二步：启动 Zen MCP Server**
 
