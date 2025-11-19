@@ -22,20 +22,36 @@
   },
   "models": [
     {
-      "model_name": "llama3.2",
+      "model_name": "gpt-5.1",
       "aliases": [
-        "local-llama",
-        "ollama-llama"
+        "gpt-5.1"
       ],
-      "context_window": 128000,
-      "max_output_tokens": 64000,
-      "supports_extended_thinking": false,
-      "supports_json_mode": false,
-      "supports_function_calling": false,
+      "context_window": 200000,
+      "max_output_tokens": 16000,
+      "supports_extended_thinking": true,
+      "supports_json_mode": true,
+      "supports_function_calling": true,
       "supports_images": false,
       "max_image_size_mb": 0.0,
-      "description": "Local Llama 3.2 model via custom endpoint (Ollama/vLLM) - 128K context window (text-only)",
-      "intelligence_score": 6
+      "description": "gpt-5.1 via custom endpoint (magic666.top)",
+      "intelligence_score": 18
+    },
+    {
+      "model_name": "grok-4-1-non-thinking-w-tool",
+      "aliases": [
+        "grok-4-1",
+        "grok4.1"
+      ],
+      "context_window": 262144,
+      "max_output_tokens": 16384,
+      "supports_extended_thinking": false,
+      "supports_json_mode": true,
+      "supports_function_calling": true,
+      "supports_images": false,
+      "max_image_size_mb": 0.0,
+      "description": "Grok-4.1 via custom endpoint (magic666.top)",
+      "intelligence_score": 17
     }
+
   ]
 }
