@@ -301,6 +301,80 @@ Reason: plan-down provides superior planning quality through:
 - Risk assessment and dependency analysis
 ```
 
+---
+
+### 5. gemini-frontend ⭐ MANDATORY for Frontend/Mobile Development
+**Purpose:** Frontend and mobile development specialist using Gemini CLI with multimodal capabilities
+
+**适用场景：**
+- React/Vue/Angular 组件开发
+- React Native/Flutter 移动端开发
+- 设计稿 → 前端代码实现（multimodal）
+- UI/UX 实现和优化
+- 前端项目重构
+
+**Triggers:**
+- "Help me build a React component"
+- "Generate Vue/Angular code"
+- "Convert this design to code" (with image)
+- "Implement this UI feature"
+- "Mobile app development" (React Native/Flutter)
+- Keywords: React, Vue, Angular, component, 组件, 页面, UI, 前端, mobile, Flutter
+
+**Core Advantages (Based on Gemini 3.0):**
+- 📷 **Multimodal Capability**: Directly understand design mockups and UI screenshots
+- 📚 **Ultra-long Context**: 1M tokens, handles large monorepos
+- 🎨 **UI Understanding**: PhD-level reasoning for complex UI logic
+- 🚀 **Code Generation**: Excels at React/Vue/Flutter code generation
+
+**Use Cases:**
+- Design-to-code conversion
+- Component library development
+- Mobile UI implementation
+- Frontend architecture setup
+- State management implementation
+
+**Key Features:**
+- 5-phase workflow (Init → Analysis → Generation → Quality Check → Documentation)
+- Dual quality validation (codereview + clink CLI) - complies with G8
+- Mermaid diagram updates - complies with G4
+- Environment-adaptive CLI calls - complies with G10
+- Inherits `automation_mode` and `coverage_target` from router
+
+**Tools:** `mcp__zen__clink` (gemini CLI) + `mcp__zen__codereview` + `simple-gemini`
+
+**Frontend Detection Scoring:**
+- Tier 1 Keywords (+30-35 points): React, Vue, Angular, component, 组件, 页面, UI, 前端
+- Tier 2 Keywords (+15-20 points): Flutter, React Native, mobile, 移动端, iOS, Android
+- Tier 3 Context (+10 points): package.json exists with frontend dependencies
+- Image Attachment (+25 points): Design mockups, UI screenshots
+- Backend Signal Penalty (-15 to -25 points): API, backend, database, FastAPI, Django
+
+**Routing Thresholds:**
+- Score ≥ 80: Auto-route to gemini-frontend
+- Score 50-79: Ask user confirmation
+- Score < 50 AND backend_signals ≥ 2: Fullstack project, suggest task decomposition
+
+**Enforcement:**
+```
+IF frontend_score ≥ 80:
+    Auto-route to gemini-frontend (high confidence)
+
+IF 50 ≤ frontend_score < 80:
+    Ask user: "检测到前端开发需求，是否使用 gemini-frontend?"
+
+IF frontend_score < 50 AND backend_signals ≥ 2:
+    Notify user: "检测到全栈项目，建议任务分解：
+    - 前端部分 → gemini-frontend
+    - 后端部分 → codex-code-reviewer 或其他技能"
+```
+
+**Detailed Examples:**
+- **Frontend Request Scoring**: See [Example 12 - Frontend Development Request](references/routing_examples.md#example-12-frontend-development-request-new-frontend-detection) for detailed demonstration of Tier 1-3 keyword detection and auto-routing (Score: 90 → gemini-frontend)
+- **Fullstack Project Handling**: See [Example 13 - Fullstack Project Detection](references/routing_examples.md#example-13-fullstack-project-detection-new-task-decomposition) for task decomposition strategy when both frontend and backend signals detected (Score: 45 with backend penalty → recommend split)
+
+---
+
 ## Routing Decision Logic
 
 ### Phase 0: Standards Reading & MCP Discovery (CRITICAL - First Step)
@@ -328,108 +402,231 @@ Read the following files to understand project-specific rules and workflows:
 2. Project CLAUDE.md (overrides global)
 3. PROJECTWIKI.md (lowest priority)
 
-#### Phase 0.2: MCP Capability Reference (Optional Discovery)
+#### Phase 0.2: 动态 MCP 发现与智能适配（Dynamic MCP Discovery & Adaptation）
 
-**Default MCP Assumptions:**
+**核心原则：不假设任何 MCP 工具"一定存在"，运行时动态检测并智能适配。**
 
-**zen-mcp is assumed AVAILABLE by default** - No pre-check required.
-- All zen-mcp tools are treated as available unless proven otherwise during execution
-- Verification happens lazily when skills actually invoke zen-mcp tools
-- Only communicate with user if tools fail at runtime
+---
 
-**User-Mentioned MCP Tools are assumed AVAILABLE** - No pre-check required.
-- If user explicitly mentions using specific MCP tools (e.g., "use serena to analyze code", "use unifuncs to search"), those tools are assumed available
-- Router will route optimistically based on user's explicit MCP tool preference
-- Verification happens lazily when those tools are actually invoked
-- Only notify user if the explicitly mentioned tools fail at runtime
+### MCP 环境扫描策略
 
-**Optional MCP Discovery (for non-zen MCPs):**
+**检测时机：**
+- **会话启动时**：首次路由前执行快速扫描（可选，推荐）
+- **运行时检测**：技能调用 MCP 工具时懒加载检测（默认）
+- **失败触发**：MCP 调用失败时重新扫描并更新缓存
 
-Optionally use `ListMcpResourcesTool` to discover additional MCP servers:
-- serena (Serena Code Intelligence) - if available, provides code intelligence enhancements
-- unifuncs (Utility Functions) - if available, provides web search/reading
-- Other MCP servers - discovered on-demand
+**检测方法：**
 
-**MCP Capability Reference Map:**
+```python
+# 伪代码示例 - 动态 MCP 能力检测
 
-Built-in knowledge of MCP tools available for skill enhancement:
+mcp_capabilities = {}  # 会话级缓存
 
-**zen-mcp tools:**
-- `mcp__zen__chat` - General Q&A, collaborative thinking
-- `mcp__zen__thinkdeep` - Multi-stage investigation, hypothesis testing
-- `mcp__zen__codereview` - Code quality review (used by codex-code-reviewer)
-- `mcp__zen__planner` - Interactive sequential planning (used by plan-down)
-- `mcp__zen__consensus` - Multi-model consensus building (used by plan-down)
-- `mcp__zen__clink` - Launch CLI tools in WSL (used by simple-gemini, deep-gemini)
-- `mcp__zen__docgen` - Structured document generation (used by deep-gemini)
-- `mcp__zen__precommit` - Git changes validation (optional enhancement)
-- `mcp__zen__debug` - Systematic debugging (optional enhancement)
-- `mcp__zen__challenge` - Critical thinking tool (optional enhancement)
-- `mcp__zen__apilookup` - API documentation lookup (optional enhancement)
-- `mcp__zen__listmodels` - Available AI models query (used by all skills)
-- `mcp__zen__version` - Server version and config (diagnostic)
+def detect_mcp_availability():
+    """运行时检测 MCP 工具可用性"""
 
-**serena-mcp tools (Code Intelligence):**
-- `mcp__serena__list_dir` - List directory contents (non-gitignored)
-- `mcp__serena__find_file` - Find files by pattern
-- `mcp__serena__search_for_pattern` - Flexible pattern search in codebase
-- `mcp__serena__get_symbols_overview` - High-level code structure overview
-- `mcp__serena__find_symbol` - Locate code symbols (classes, methods, etc.)
-- `mcp__serena__find_referencing_symbols` - Find references to symbols
-- `mcp__serena__replace_symbol_body` - Edit symbol definitions
-- `mcp__serena__insert_after_symbol` - Insert code after symbols
-- `mcp__serena__insert_before_symbol` - Insert code before symbols
-- `mcp__serena__write_memory` - Store project knowledge
-- `mcp__serena__read_memory` - Retrieve project knowledge
-- `mcp__serena__list_memories` - List available memories
-- `mcp__serena__delete_memory` - Remove memory files
-- `mcp__serena__activate_project` - Switch between projects
-- `mcp__serena__get_current_config` - Get agent configuration
-- `mcp__serena__check_onboarding_performed` - Check project onboarding status
-- `mcp__serena__onboarding` - Project onboarding workflow
-- `mcp__serena__think_about_collected_information` - Reflect on gathered info
-- `mcp__serena__think_about_task_adherence` - Verify task alignment
-- `mcp__serena__think_about_whether_you_are_done` - Completion check
+    # 1. 检测 zen-mcp
+    try:
+        version_info = call_tool("mcp__zen__version")
+        mcp_capabilities["zen-mcp"] = {
+            "available": True,
+            "version": version_info.get("version"),
+            "tools": extract_available_tools(version_info)
+        }
+    except Exception:
+        mcp_capabilities["zen-mcp"] = {"available": False}
 
-**unifuncs-mcp tools (Utility Functions):**
-- `mcp__unifuncs__web-search` - Web search capability
-- `mcp__unifuncs__web-reader` - Read web page content
+    # 2. 检测 serena-mcp（代码智能）
+    try:
+        config = call_tool("mcp__serena__get_current_config")
+        mcp_capabilities["serena-mcp"] = {
+            "available": True,
+            "tools": list_serena_tools()
+        }
+    except Exception:
+        mcp_capabilities["serena-mcp"] = {"available": False}
 
-**MCP-Skill Capability Matrix:**
+    # 3. 检测 unifuncs-mcp（工具函数）
+    try:
+        search_test = call_tool("mcp__unifuncs__web-search", {"query": "test", "count": 1})
+        mcp_capabilities["unifuncs-mcp"] = {"available": True}
+    except Exception:
+        mcp_capabilities["unifuncs-mcp"] = {"available": False}
 
-| Skill | Required MCP Tools | Optional Enhancement Tools | Special Requirements |
-|-------|-------------------|---------------------------|---------------------|
-| zen-chat | mcp__zen__chat | mcp__zen__apilookup, mcp__unifuncs__web-search | - |
-| zen-thinkdeep | mcp__zen__thinkdeep | mcp__serena__* (code analysis), mcp__zen__debug | - |
-| codex-code-reviewer | mcp__zen__codereview | mcp__serena__* (symbol editing), mcp__zen__precommit | - |
-| simple-gemini | mcp__zen__clink | mcp__serena__* (code reading), mcp__unifuncs__web-reader | - |
-| deep-gemini | mcp__zen__clink, mcp__zen__docgen | mcp__serena__* (code analysis), mcp__zen__apilookup | - |
-| plan-down | mcp__zen__chat, mcp__zen__planner, mcp__zen__consensus (conditional), mcp__zen__clink (for codex/gemini) | mcp__serena__read_memory (project context) | **G10 Compliance**: codex/gemini require clink to establish CLI session before consensus. Four-path workflow: Phase 0 uses chat to judge method clarity, then routes to appropriate path. |
+    # 4. 检测其他 MCP（用户自定义）
+    # 可通过 ListMcpResourcesTool 发现额外 MCP 服务器
 
-**MCP Availability Strategy:**
+    return mcp_capabilities
+```
 
-**Optimistic Routing (Default):**
-- **Assume zen-mcp tools are available** - Route to skills without pre-checking
-- Skills will attempt to use zen-mcp tools directly
-- Only intervene if tool invocation fails at runtime
+---
 
-**Lazy Verification (On-Demand):**
-- Verification happens when skills actually invoke MCP tools
-- If tool fails → Skill reports error back to router
-- Router then communicates with user and suggests fallback
+### 技能 → MCP 依赖关系（动态映射）
 
-**Optional Enhancement Discovery:**
-- serena/unifuncs MCPs can be discovered on-demand using `ListMcpResourcesTool`
-- If discovered → Pass as enhancement options to skills
-- If not discovered → Skills proceed with zen-mcp only (no user notification)
+**技能与 MCP 工具的依赖分为三类：**
 
-**Standards-Based Routing Rules:**
-- If user is in **P1 (Analyze Problem)** phase → May route to zen-thinkdeep for deep analysis
-- If user is in **P2 (Formulate Solution)** phase → May route to plan-down for planning
-- If user is in **P3 (Execute Solution)** phase → May route to codex-code-reviewer after code changes
-- If user mentions **"full automation"** → Enable Full Automation Mode
-- If standards require documentation → Auto-route to simple-gemini or deep-gemini
-- If standards forbid execution (G3 violation) → Do NOT route to execution-related skills
+1. **必需工具（Required）**：技能核心功能依赖，缺失则无法工作
+2. **增强工具（Enhancement）**：提升技能能力，缺失可降级
+3. **可选工具（Optional）**：锦上添花，缺失无影响
+
+**动态依赖映射表：**
+
+| Skill | 必需工具 | 增强工具 | 降级方案 |
+|-------|---------|---------|---------|
+| **zen-chat** | mcp__zen__chat | mcp__zen__apilookup<br/>mcp__unifuncs__web-search | 降级到主模型直接回答（无多轮协作） |
+| **zen-thinkdeep** | mcp__zen__thinkdeep | mcp__serena__* (代码分析)<br/>mcp__zen__debug | 降级到主模型单轮深度分析 |
+| **codex-code-reviewer** | mcp__zen__codereview<br/>或 mcp__zen__clink (codex CLI) | mcp__serena__* (符号编辑)<br/>mcp__zen__precommit | 使用主模型 + Read/Edit 工具进行审查 |
+| **simple-gemini** | mcp__zen__clink (gemini CLI) | mcp__serena__* (代码读取)<br/>mcp__unifuncs__web-reader | 降级到主模型直接生成文档/测试 |
+| **deep-gemini** | mcp__zen__clink (gemini CLI)<br/>mcp__zen__docgen | mcp__serena__* (代码分析)<br/>mcp__zen__apilookup | 降级到主模型深度分析 |
+| **plan-down** | mcp__zen__chat (方法判断)<br/>mcp__zen__planner (任务分解) | mcp__zen__consensus (自动化模式)<br/>mcp__serena__read_memory (项目上下文)<br/>mcp__zen__clink (codex/gemini CLI) | 降级到主模型直接规划 |
+| **gemini-frontend** | mcp__zen__clink (gemini CLI) | mcp__serena__* (代码分析)<br/>mcp__unifuncs__web-reader (设计参考) | 降级到主模型前端开发 |
+
+**G10 合规特殊要求：**
+- 使用 codex/gemini 模型时，必须先用 `mcp__zen__clink` 建立 CLI 会话
+- plan-down 的四路径工作流：Phase 0 使用 chat 判断方法清晰度，Automatic + Unclear 路径需要 consensus
+
+---
+
+### 智能适配与降级策略
+
+**适配原则：**
+
+1. **用户显式指定 MCP 工具时**：
+   - 优先尝试用户指定的工具
+   - 如果工具不可用，**通知用户**并提供替代方案
+   - 示例：用户说 "use serena to analyze code" → 检测 serena → 不可用则通知
+
+2. **Router 自动选择技能时**：
+   - 根据 MCP 可用性调整技能推荐优先级
+   - 必需工具不可用 → 降级到备用方案
+   - 仅增强工具不可用 → 静默降级，不通知用户
+
+3. **降级决策树**：
+
+```
+IF 技能必需工具全部可用:
+    → 正常路由到该技能（最优方案）
+
+ELSE IF 技能必需工具部分缺失:
+    → 检查降级方案是否可行
+    IF 降级方案可行:
+        → 使用降级方案（通知用户，如果是显式请求）
+    ELSE:
+        → 通知用户工具缺失，请求确认或提供替代方案
+
+ELSE IF 仅增强工具缺失:
+    → 正常路由，静默降级（不通知用户）
+```
+
+**降级方案示例：**
+
+| 原方案 | 缺失工具 | 降级方案 | 通知用户？ |
+|--------|---------|---------|-----------|
+| codex-code-reviewer | zen-mcp 完全不可用 | 主模型 + Read/Edit 工具审查 | ✅ 是（显著功能降级） |
+| simple-gemini | clink 不可用 | 主模型直接生成文档 | ✅ 是（质量可能下降） |
+| zen-chat | zen__apilookup 不可用 | 仅使用 zen__chat，无 API 查询 | ❌ 否（增强功能，非必需） |
+| zen-thinkdeep | serena 不可用 | 使用 Read/Grep 工具代替代码分析 | ❌ 否（自动适配） |
+
+---
+
+### 运行时适配示例
+
+**示例 1：用户显式请求使用 codex**
+
+```
+用户："use codex to check the code"
+
+Router 执行：
+1. 检测 zen-mcp 可用性
+   - IF zen-mcp 可用 → 路由到 codex-code-reviewer（使用 mcp__zen__codereview）
+   - IF zen-mcp 不可用但 clink 可用 → 路由到 codex-code-reviewer（使用 mcp__zen__clink + codex CLI）
+   - IF 两者都不可用 → 通知用户：
+     "检测到 zen-mcp 和 clink 均不可用。可以使用主模型进行代码审查（功能受限），是否继续？"
+```
+
+**示例 2：Router 自动路由到 simple-gemini**
+
+```
+Router 判断：需要生成 README 文档 → 路由到 simple-gemini
+
+适配流程：
+1. 检测 mcp__zen__clink 可用性
+   - IF 可用 → 正常调用 simple-gemini（使用 gemini CLI）
+   - IF 不可用 → 降级到主模型直接生成（通知用户："gemini CLI 不可用，使用主模型生成文档"）
+
+2. 检测增强工具（serena, unifuncs）
+   - IF serena 可用 → 增强代码读取能力
+   - IF serena 不可用 → 使用 Read 工具（静默降级，不通知）
+```
+
+**示例 3：全自动化模式下的 plan-down**
+
+```
+Router 判断：P2 阶段，需要生成 plan.md → 路由到 plan-down
+
+适配流程：
+1. 检测必需工具（chat, planner）
+   - IF 全部可用 → 继续
+   - IF 任一缺失 → 降级到主模型直接规划（通知："plan-down 依赖工具缺失，使用主模型规划"）
+
+2. 检测增强工具（consensus, clink）
+   - IF automation_mode=true 且方法模糊 → 需要 consensus
+     - consensus 可用 → 正常多模型验证
+     - consensus 不可用 → 降级到单模型规划（通知："多模型验证不可用，使用单模型规划"）
+   - IF consensus 需要 codex/gemini → 检测 clink
+     - clink 可用 → 符合 G10，建立 CLI 会话
+     - clink 不可用 → 跳过 consensus（静默降级）
+```
+
+---
+
+### MCP 可用性缓存与刷新
+
+**缓存策略：**
+- **会话级缓存**：检测结果在同一会话中共享
+- **失败触发刷新**：MCP 调用失败时自动重新检测
+- **手动刷新**：用户可请求 "refresh MCP status" 强制重新扫描
+
+**缓存数据结构：**
+
+```python
+# 示例缓存结构
+mcp_status_cache = {
+    "zen-mcp": {
+        "available": True,
+        "last_check": "2025-11-19T11:30:00Z",
+        "tools": ["chat", "thinkdeep", "codereview", "clink", "planner", ...]
+    },
+    "serena-mcp": {
+        "available": True,
+        "last_check": "2025-11-19T11:30:00Z",
+        "tools": ["list_dir", "find_file", "search_for_pattern", ...]
+    },
+    "unifuncs-mcp": {
+        "available": False,  # 用户未安装
+        "last_check": "2025-11-19T11:30:00Z",
+        "error": "Connection refused"
+    }
+}
+```
+
+---
+
+### Standards-Based Routing Rules（基于标准的路由规则）
+
+**根据 CLAUDE.md 阶段和 MCP 可用性动态调整路由：**
+
+- **P1 (分析问题)** → 优先 zen-thinkdeep（如可用），否则主模型分析
+- **P2 (制定方案)** → 优先 plan-down（如可用），否则主模型规划
+- **P3 (执行方案)** → 代码完成后强制 codex-code-reviewer（如可用），否则主模型审查
+- **automation_mode=true** → 优先使用 MCP 增强的自动化工作流
+- **文档生成需求** → 优先 simple-gemini/deep-gemini（如 clink 可用），否则主模型生成
+- **G3 违规（禁止执行）** → 不路由到任何执行相关技能
+
+**透明通知原则：**
+- **关键功能降级**（必需工具缺失） → **必须通知用户**
+- **增强功能降级**（可选工具缺失） → **静默适配，不通知**
+- **用户显式请求的工具缺失** → **必须通知并提供替代方案**
 
 #### Phase 0.3: Set Coverage Target (G9 Compliance)
 
@@ -841,7 +1038,28 @@ Detailed report:
 
 ## Routing Examples
 
-### Example 1: General Q&A Request
+**Note:** For detailed routing examples with comprehensive Chinese descriptions and step-by-step decision processes, please refer to: **[references/routing_examples.md](references/routing_examples.md)**
+
+### Quick Example Index
+
+The routing_examples.md file contains 14 complete examples demonstrating main-router's decision-making process:
+
+1. [Example 1: General Q&A Request](references/routing_examples.md#example-1-general-qa-request) - Simple conceptual questions → zen-chat
+2. [Example 2: Deep Problem Investigation](references/routing_examples.md#example-2-deep-problem-investigation) - Complex debugging → zen-thinkdeep
+3. [Example 3: Simple Document Generation](references/routing_examples.md#example-3-simple-document-generation) - Standard docs → simple-gemini
+4. [Example 4: Code Quality Check](references/routing_examples.md#example-4-code-quality-check) - Explicit codex request → codex-code-reviewer
+5. [Example 5: Deep Technical Analysis](references/routing_examples.md#example-5-deep-technical-analysis-request) - Complexity analysis → deep-gemini
+6. [Example 6: Planning Request](references/routing_examples.md#example-6-planning-request) - Task decomposition → plan-down
+7. [Example 7: Ambiguous Request](references/routing_examples.md#example-7-ambiguous-request) - Clarification workflow
+8. [Example 8: Multi-Skill Sequential](references/routing_examples.md#example-8-multi-skill-sequential) - Multi-task execution
+9. [Example 9: Full Automation Mode](references/routing_examples.md#example-9-full-automation-mode-correct-behavior) - Zero-wait principle demonstration
+10. [Example 10: User Explicitly Mentions MCP Tools](references/routing_examples.md#example-10-user-explicitly-mentions-mcp-tools) - MCP tool routing
+11. [Example 11: Complete Task Lifecycle](references/routing_examples.md#example-11-complete-task-lifecycle-with-active-monitoring-best-practice) ⭐ **BEST PRACTICE** - Active monitoring
+12. [Example 12: Frontend Development Request](references/routing_examples.md#example-12-frontend-development-request-new-frontend-detection) ⭐ **NEW** - Frontend detection scoring → gemini-frontend
+13. [Example 13: Fullstack Project Detection](references/routing_examples.md#example-13-fullstack-project-detection-new-task-decomposition) ⭐ **NEW** - Task decomposition for fullstack
+14. [Example 14: Code + Review Workflow](references/routing_examples.md#example-14-code--review-workflow) - Sequential skill invocation
+
+**Quick Reference - Example 1 (General Q&A):**
 
 **User:** "Explain what is overfitting in machine learning?"
 
@@ -862,406 +1080,6 @@ Rationale:
 ```
 
 ---
-
-### Example 2: Deep Problem Investigation
-
-**User:** "Deeply analyze why the loss doesn't decrease during training"
-
-**Router Decision:**
-```
-Intent: Deep problem investigation
-Keywords: "deeply analyze", "problem"
-Target: Complex debugging/troubleshooting
-Output: Multi-stage investigation report
-
-→ Route to: zen-thinkdeep
-
-Rationale:
-- Requires systematic investigation
-- Multi-stage hypothesis testing needed
-- zen-thinkdeep provides evidence-based analysis
-- Not a simple Q&A, requires deep reasoning
-```
-
----
-
-### Example 3: Simple Document Generation
-
-**User:** "Generate the project's README document"
-
-**Router Decision:**
-```
-Intent: Document generation
-Document Type: README (standard)
-Depth: Standard
-
-→ Route to: simple-gemini
-
-Rationale:
-- README is a standard document type
-- No deep analysis required
-- simple-gemini handles README templates
-```
-
----
-
-### Example 4: Code Quality Check
-
-**User:** "Use codex to check the code"
-
-**Router Decision:**
-```
-Intent: Code review
-Explicit mention: "codex"
-
-→ Route to: codex-code-reviewer
-
-Rationale:
-- User explicitly requested codex
-- Clear intent for code quality check
-- codex-code-reviewer is the designated tool
-```
-
----
-
-### Example 5: Deep Technical Analysis Request
-
-**User:** "Deeply analyze the training logic of model_training.py, including complexity"
-
-**Router Decision:**
-```
-Intent: Deep analysis
-Keywords: "deeply analyze", "complexity"
-Target: Specific code file
-Output: Technical analysis document
-
-→ Route to: deep-gemini
-
-Rationale:
-- "deeply analyze" signals need for comprehensive analysis
-- "complexity" requires Big O analysis (deep-gemini feature)
-- Not a standard doc, requires clink + docgen workflow
-```
-
----
-
-### Example 6: Planning Request
-
-**User:** "Help me create a development plan for user authentication feature"
-
-**Router Decision:**
-```
-Intent: Planning
-Keywords: "create", "plan"
-Scope: Feature development
-Output: plan.md
-
-→ Route to: plan-down
-
-Rationale:
-- Clear planning intent
-- Requires task decomposition
-- plan-down uses four-path workflow: Phase 0 (chat judges method clarity) → [Conditional Phase 1] → Phase 2 (planner) → Phase 3 (plan.md)
-```
-
----
-
-### Example 7: Ambiguous Request
-
-**User:** "Generate a document"
-
-**Router Decision:**
-```
-Intent: Document generation
-Ambiguity: What type of document?
-
-→ Action: Ask User for Clarification
-
-Question to User:
-"What type of document do you want to generate?
-
-1. Standard project documentation (README, PROJECTWIKI, CHANGELOG) → simple-gemini
-2. Deep technical analysis documentation (architecture analysis, performance analysis) → deep-gemini
-3. Development plan documentation (plan.md) → plan-down
-
-Please select or specify the document type."
-```
-
----
-
-### Example 8: Multi-Skill Sequential
-
-**User:** "First create a plan, then generate README"
-
-**Router Decision:**
-```
-Intent: Multi-task sequential
-Task 1: Planning → plan-down
-Task 2: Document generation → simple-gemini
-Execution: Sequential (Task 1 must complete before Task 2)
-
-→ Execution Plan:
-1. Invoke plan-down
-2. Wait for completion
-3. Invoke simple-gemini
-4. Return combined results
-```
-
----
-
-### Example 9: Full Automation Mode - Correct Behavior
-
-**User:** "Full automation, help me complete this project's development workflow: analyze existing code, create optimization plan, generate documentation, check code quality"
-
-**Router Response (CORRECT - No Questions Asked):**
-```
-[Full Automation Mode] Detected user request "full automation", initiating full automation workflow.
-
-Step 0: Standards Loading
-- Read Global CLAUDE.md: P1→P2→P3 workflow, G1 Documentation First-Class Citizen
-- Read Global CLAUDE.md: Model Development Principles
-- Read Project CLAUDE.md: [Project-specific rules]
-
-Step 1: Intent Analysis
-- Detected multi-task sequential workflow
-- Task sequence: Analysis → Planning → Documentation → Review
-
-Step 2: Auto-Routing Execution (NO USER CONFIRMATION)
-
-[Full Automation Mode - Task 1: Analyze Existing Code]
-Auto-selected: zen-thinkdeep
-Confidence: 75%
-Rationale: Requires deep analysis, meets P1 phase requirements
-Standards basis: CLAUDE.md P1 - Problem Analysis
-→ Immediately execute zen-thinkdeep...
-
-[Full Automation Mode - Task 2: Create Optimization Plan]
-Auto-selected: plan-down
-Confidence: 90%
-Rationale: Clear planning intent, meets P2 phase requirements
-Standards basis: CLAUDE.md P2 - Solution Planning, G11 mandatory use of plan-down
-→ Immediately execute plan-down...
-
-Auto-selected: simple-gemini
-Confidence: 65%
-Rationale: Standard document generation, choose simple over deep when ambiguous
-Standards basis: G1 - Documentation First-Class Citizen
-→ Immediately execute simple-gemini...
-
-[Full Automation Mode - Task 4: Check Code Quality]
-Auto-selected: codex-code-reviewer
-Confidence: 95%
-Rationale: Clear code review intent, meets P3 phase requirements
-Standards basis: CLAUDE.md P3 - Review after execution, G11 mandatory use of codex
-→ Immediately execute codex-code-reviewer...
-
-[Full Automation Mode - Execution Plan]
-Execution mode: Sequential
-1. zen-thinkdeep → Analyze existing code structure and issues
-2. plan-down → Create optimization plan based on analysis results
-3. simple-gemini → Generate PROJECTWIKI.md and README.md
-4. codex-code-reviewer → Comprehensive code quality review
-
-Standards basis: CLAUDE.md (P1→P2→P3), CLAUDE.md (Quality Principles)
-Average confidence: 81.25%
-
-✅ Note: No user confirmation needed throughout, automatically execute all steps.
-
-[Full Automation Mode - Task Completion]
-All tasks completed.
-→ Generate decision log auto_log.md...
-→ Use simple-gemini to record complete decision-making process
-```
-
-**Final Step - Auto Log Generation (MANDATORY):**
-```
-After all tasks complete in Full Automation Mode:
-
-Tool: simple-gemini (or invoke directly via skill)
-Task: Generate auto_log.md
-Content Requirements:
-  - Complete decision timeline (timestamps for each phase)
-  - All auto-decision rationales and standards basis
-  - Skills/tools invoked list and parameters
-  - Confidence scores and risk assessment
-  - Issues encountered and solutions
-  - Final results and output files list
-  - Decision tree visualization (Mermaid)
-
-Template Structure for auto_log.md:
----
-# Full Automation Execution Log (Auto Execution Log)
-Generated at: {timestamp}
-
-## Executive Summary (Executive Summary)
-- User initial request: {original_request}
-- Execution mode: Full automation
-- Total tasks: {task_count}
-- Success/Failure: {success_count}/{failure_count}
-- Total duration: {duration}
-
-## Decision Timeline (Decision Timeline)
-{chronological list of all decisions}
-
-## Skills Invoked (Skills Invoked)
-{list of all skills with parameters and results}
-
-## Auto-Decision Details (Auto-Decision Details)
-{detailed rationale for each auto-decision}
-
-## Issues Encountered (Issues Encountered)
-{any errors or blockers, and how they were resolved}
-
-## Output Files (Output Files)
-{list of all generated files}
----
-
-Purpose: Provide complete transparency to user
-```
-
-**Anti-Pattern - WRONG Full Automation Behavior:**
-```
-❌ WRONG:
-"Because current mode is full automation, I will automatically enter P2 phase and call plan-down to generate detailed plan.
- Should I continue? (Default to continue in automation mode, please let me know if tech stack needs adjustment)"
-
-Why Wrong:
-- Asking "Should I continue?" - Violates full automation principle
-- "please let me know if tech stack needs adjustment" - Should not prompt user intervention
-- Should execute directly, not ask
-
-✅ CORRECT:
-"[Full Automation Mode] Detected need for planning, automatically entering P2 phase.
- Calling plan-down skill to generate detailed plan...
- (Decision basis: User initial request contains 'full automation', current phase P1→P2, standards basis G11)"
-```
-
----
-
-### Example 10: User Explicitly Mentions MCP Tools
-
-**User:** "Use serena's find_symbol tool to analyze code structure, then generate documentation"
-
-**Router Decision:**
-```
-Intent: Multi-task sequential with explicit MCP tool preference
-User-Mentioned MCP: serena (specifically mcp__serena__find_symbol)
-Task 1: Code structure analysis (using serena)
-Task 2: Document generation
-
-Step 0.2: MCP Assumptions
-→ zen-mcp: Assumed AVAILABLE (default)
-→ serena: Assumed AVAILABLE (user explicitly mentioned)
-→ No pre-check needed for either
-
-Step 1: Intent Analysis
-→ User wants to use serena for code analysis
-→ Then generate documentation based on analysis
-
-Step 2: Routing Decision
-
-Task 1: Code Analysis with serena
-→ Tool: Main Claude with mcp__serena__find_symbol
-Rationale: User explicitly requested serena tool
-Strategy: Direct invocation, verify lazily at runtime
-
-Task 2: Generate Documentation
-→ Route to: simple-gemini (confidence: 70%)
-Rationale: Standard documentation generation after analysis
-Note: Can leverage serena findings from Task 1
-
-→ Execution Plan (Sequential):
-1. Main Claude invokes mcp__serena__find_symbol for code analysis
-2. Collect structure findings
-3. Invoke simple-gemini for documentation (can reference serena findings)
-4. Return combined results
-
-Error Handling:
-If mcp__serena__find_symbol fails at runtime:
-  → Notify user: "serena tool is currently unavailable"
-  → Fallback: Use zen-mcp code analysis tools or manual code reading
-  → User choice: Continue with fallback OR troubleshoot serena MCP
-```
-
----
-
-### Example 11: Complete Task Lifecycle with Active Monitoring ⭐ BEST PRACTICE
-
-**User:** "Help me develop a user login feature"
-
-**Router Active Monitoring Workflow:**
-
-```
-Phase 1: Planning
-→ Router detects: User requests feature development
-→ Action: MUST invoke plan-down (not Main Claude direct planning)
-→ Tool: plan-down skill
-→ Output: plan.md with multi-model validated task breakdown
-
-Phase 2: Code Generation (Main Claude executes)
-→ Router monitors: Main Claude generates login.py
-→ Router detects: Code generation completed
-→ Action: MUST invoke codex-code-reviewer for quality check
-→ Tool: codex-code-reviewer
-→ Output: Quality report + potential fixes
-
-Phase 3: Test Code Generation
-→ Router detects: Need test code for login.py
-→ Action 1: MUST invoke simple-gemini to generate test_login.py
-→ Action 2: MUST invoke codex-code-reviewer to validate test code
-→ Tool: simple-gemini → codex-code-reviewer
-→ Output: Validated test_login.py ready for Main Claude to execute
-
-Phase 4: Documentation
-→ Router detects: Need to update PROJECTWIKI.md
-→ Action: MUST invoke simple-gemini for doc generation
-→ Tool: simple-gemini
-→ Output: Updated PROJECTWIKI.md with login feature docs
-
-Phase 5: Final Validation
-→ Router detects: All components completed
-→ Action: MUST invoke codex-code-reviewer for final review
-→ Tool: codex-code-reviewer
-→ Output: Comprehensive quality report
-
-Full Execution Log:
-1. plan-down → plan.md generated
-2. Main Claude → login.py generated
-3. codex-code-reviewer → login.py validated
-4. simple-gemini → test_login.py generated
-5. codex-code-reviewer → test_login.py validated
-6. Main Claude → tests executed
-7. simple-gemini → PROJECTWIKI.md updated
-8. codex-code-reviewer → final validation
-
-Router's Active Role:
-- Monitored entire lifecycle (5 phases)
-- Invoked skills 6 times proactively
-- Did NOT allow Main Claude to skip quality checks
-- Ensured proper skill usage at each stage
-```
-
-**Key Takeaway:** Router actively monitors and intervenes, ensuring proper skill usage throughout the task lifecycle. **No lazy shortcuts allowed.**
-
----
-
-### Example 12: Code + Review Workflow
-
-**User:** "Generate test files then check code quality"
-
-**Router Decision:**
-```
-Intent: Multi-task sequential
-Task 1: Generate tests → simple-gemini
-Task 2: Code review → codex-code-reviewer
-Execution: Sequential
-
-→ Execution Plan:
-1. Invoke simple-gemini (test code generation)
-2. Wait for test files to be created
-3. Invoke codex-code-reviewer (review all code including new tests)
-4. Return results
-```
 
 ## Best Practices
 
